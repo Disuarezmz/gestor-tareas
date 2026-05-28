@@ -2,32 +2,32 @@
 -- Run once: psql -d gestor_tareas -f server/schema.sql
 
 CREATE TABLE IF NOT EXISTS projects (
-  id         SERIAL      PRIMARY KEY,
-  name       TEXT        NOT NULL,
-  desc       TEXT        NOT NULL DEFAULT '',
-  color      TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 285)',
-  status     TEXT        NOT NULL DEFAULT 'activo',
-  due        TEXT        NOT NULL DEFAULT '—',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id          SERIAL      PRIMARY KEY,
+  name        TEXT        NOT NULL,
+  description TEXT        NOT NULL DEFAULT '',
+  color       TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 285)',
+  status      TEXT        NOT NULL DEFAULT 'activo',
+  due         TEXT        NOT NULL DEFAULT '—',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-  id         SERIAL      PRIMARY KEY,
-  title      TEXT        NOT NULL,
-  desc       TEXT        NOT NULL DEFAULT '',
-  status     TEXT        NOT NULL DEFAULT 'new',
-  priority   TEXT        NOT NULL DEFAULT 'med',
-  project_id INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
-  due        TEXT        NOT NULL DEFAULT '—',
-  tags       TEXT[]      NOT NULL DEFAULT '{}',
-  subtasks   INTEGER[],
-  comments   INTEGER     NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id          SERIAL      PRIMARY KEY,
+  title       TEXT        NOT NULL,
+  description TEXT        NOT NULL DEFAULT '',
+  status      TEXT        NOT NULL DEFAULT 'new',
+  priority    TEXT        NOT NULL DEFAULT 'med',
+  project_id  INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
+  due         TEXT        NOT NULL DEFAULT '—',
+  tags        TEXT[]      NOT NULL DEFAULT '{}',
+  subtasks    INTEGER[],
+  comments    INTEGER     NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ── Seed data (idempotent) ────────────────────────────────────
 
-INSERT INTO projects (id, name, desc, color, status, due) VALUES
+INSERT INTO projects (id, name, description, color, status, due) VALUES
   (1, 'Rediseño app',  'Diseño y rediseño de la app iOS, foco en onboarding y home.',  'oklch(72% 0.13 320)', 'activo', 'hoy'),
   (2, 'Marketing Q3',  'Campaña, landing, copy y demo para clientes.',                  'oklch(78% 0.11 80)',  'activo', 'mañana'),
   (3, 'Backend v2',    'Migración a Postgres 16 + nuevo auth.',                         'oklch(72% 0.09 235)', 'activo', '03 jun'),
@@ -37,7 +37,7 @@ ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('projects_id_seq', (SELECT MAX(id) FROM projects));
 
-INSERT INTO tasks (id, title, desc, status, priority, project_id, due, tags, subtasks, comments) VALUES
+INSERT INTO tasks (id, title, description, status, priority, project_id, due, tags, subtasks, comments) VALUES
   (1,  'Cerrar onboarding rediseño',   'Revisar el flujo completo de onboarding y cerrar todos los pendientes antes de la entrega al cliente.',  'exec', 'high', 1, 'hoy',       ARRAY['ux','ios'],          ARRAY[3,5], 5),
   (2,  'Revisar PR #482',              'Revisar la pull request del módulo de autenticación OAuth con los cambios de sesión.',                    'exec', 'med',  3, 'hoy',       ARRAY['code-review'],       NULL,       3),
   (3,  'Llamada con diseño',           'Sync semanal con el equipo de diseño. Revisar avances del sprint.',                                      'wait', 'med',  1, 'hoy 16:00', ARRAY['meeting'],            NULL,       0),

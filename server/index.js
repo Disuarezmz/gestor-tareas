@@ -1,6 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import pool from './db.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(express.json());
@@ -10,12 +14,12 @@ const PORT = process.env.PORT || 3001;
 // ── Serializers ───────────────────────────────────────────────
 
 function toProject(r) {
-  return { id: r.id, name: r.name, desc: r.desc, color: r.color, status: r.status, due: r.due };
+  return { id: r.id, name: r.name, desc: r.description, color: r.color, status: r.status, due: r.due };
 }
 
 function toTask(r) {
   return {
-    id: r.id, title: r.title, desc: r.desc,
+    id: r.id, title: r.title, desc: r.description,
     status: r.status, priority: r.priority,
     project: r.project_id,
     due: r.due, tags: r.tags ?? [], subtasks: r.subtasks ?? null, comments: r.comments,
@@ -38,14 +42,14 @@ app.get('/api/projects', wrap(async (_req, res) => {
 app.post('/api/projects', wrap(async (req, res) => {
   const { name, desc = '', color = 'oklch(72% 0.13 285)', status = 'activo', due = '—' } = req.body;
   const { rows } = await pool.query(
-    'INSERT INTO projects (name, desc, color, status, due) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+    'INSERT INTO projects (name, description, color, status, due) VALUES ($1,$2,$3,$4,$5) RETURNING *',
     [name, desc, color, status, due],
   );
   res.status(201).json(toProject(rows[0]));
 }));
 
 app.put('/api/projects/:id', wrap(async (req, res) => {
-  const MAP = { name: 'name', desc: 'desc', color: 'color', status: 'status', due: 'due' };
+  const MAP = { name: 'name', desc: 'description', color: 'color', status: 'status', due: 'due' };
   const { sets, vals } = buildUpdate(MAP, req.body);
   if (!sets.length) return res.status(400).json({ error: 'No fields' });
   vals.push(req.params.id);
@@ -74,7 +78,7 @@ app.post('/api/tasks', wrap(async (req, res) => {
     project = null, due = '—', tags = [], subtasks = null, comments = 0,
   } = req.body;
   const { rows } = await pool.query(
-    `INSERT INTO tasks (title, desc, status, priority, project_id, due, tags, subtasks, comments)
+    `INSERT INTO tasks (title, description, status, priority, project_id, due, tags, subtasks, comments)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [title, desc, status, priority, project || null, due, tags, subtasks, comments],
   );
@@ -83,7 +87,7 @@ app.post('/api/tasks', wrap(async (req, res) => {
 
 app.put('/api/tasks/:id', wrap(async (req, res) => {
   const MAP = {
-    title: 'title', desc: 'desc', status: 'status', priority: 'priority',
+    title: 'title', desc: 'description', status: 'status', priority: 'priority',
     project: 'project_id', due: 'due', tags: 'tags', subtasks: 'subtasks', comments: 'comments',
   };
   const body = { ...req.body };
@@ -113,6 +117,11 @@ function buildUpdate(map, body) {
   }
   return { sets, vals };
 }
+
+// ── Static (production) ───────────────────────────────────────
+
+app.use(express.static(join(__dirname, '../dist')));
+app.get('*', (_req, res) => res.sendFile(join(__dirname, '../dist/index.html')));
 
 // ── Start ─────────────────────────────────────────────────────
 
