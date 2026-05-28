@@ -35,12 +35,17 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    if (mode === 'register' && password !== confirm) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'login') {
@@ -58,7 +63,7 @@ export default function AuthPage() {
   const switchMode = () => {
     setMode((m) => (m === 'login' ? 'register' : 'login'));
     setError('');
-    setName(''); setEmail(''); setPassword('');
+    setName(''); setEmail(''); setPassword(''); setConfirm('');
   };
 
   return (
@@ -104,6 +109,13 @@ export default function AuthPage() {
               value={password} onChange={setPassword}
               placeholder="••••••"
             />
+            {mode === 'register' && (
+              <Field
+                label="Confirmar contraseña" type="password"
+                value={confirm} onChange={setConfirm}
+                placeholder="••••••"
+              />
+            )}
 
             {error && (
               <div style={{

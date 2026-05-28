@@ -19,21 +19,21 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS projects (
-  id         SERIAL      PRIMARY KEY,
-  user_id    INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name       TEXT        NOT NULL,
-  desc       TEXT        NOT NULL DEFAULT '',
-  color      TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 285)',
-  status     TEXT        NOT NULL DEFAULT 'activo',
-  due        TEXT        NOT NULL DEFAULT '—',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id          SERIAL      PRIMARY KEY,
+  user_id     INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT        NOT NULL,
+  description TEXT        NOT NULL DEFAULT '',
+  color       TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 285)',
+  status      TEXT        NOT NULL DEFAULT 'activo',
+  due         TEXT        NOT NULL DEFAULT '—',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-  id         SERIAL      PRIMARY KEY,
-  user_id    INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title      TEXT        NOT NULL,
-  desc       TEXT        NOT NULL DEFAULT '',
+  id          SERIAL      PRIMARY KEY,
+  user_id     INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       TEXT        NOT NULL,
+  description TEXT        NOT NULL DEFAULT '',
   status     TEXT        NOT NULL DEFAULT 'new',
   priority   TEXT        NOT NULL DEFAULT 'med',
   project_id INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
