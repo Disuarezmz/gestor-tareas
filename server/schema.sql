@@ -1,22 +1,16 @@
--- Schema for gestor-tareas (multi-user)
--- FRESH INSTALL: run as-is — drops and recreates everything.
--- EXISTING DB:   comment out the 3 DROP lines below to preserve data.
-
-DROP TABLE IF EXISTS audit_log CASCADE;
-DROP TABLE IF EXISTS tasks CASCADE;
-DROP TABLE IF EXISTS projects CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Schema for gestor-tareas — solo se ejecuta en instalación limpia (volumen vacío).
+-- Las migraciones incrementales las gestiona server/migrate.js en cada arranque.
 
 CREATE TABLE IF NOT EXISTS users (
-  id            SERIAL      PRIMARY KEY,
-  name          TEXT        NOT NULL,
-  email         TEXT        NOT NULL UNIQUE,
-  password_hash TEXT        NOT NULL,
-  avatar_color  TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 210)',
-  role                TEXT        NOT NULL DEFAULT 'user',   -- 'user' | 'admin'
-  is_active           BOOLEAN     NOT NULL DEFAULT true,
-  must_change_password BOOLEAN    NOT NULL DEFAULT false,
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                   SERIAL      PRIMARY KEY,
+  name                 TEXT        NOT NULL,
+  email                TEXT        NOT NULL UNIQUE,
+  password_hash        TEXT        NOT NULL,
+  avatar_color         TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 210)',
+  role                 TEXT        NOT NULL DEFAULT 'user',
+  is_active            BOOLEAN     NOT NULL DEFAULT true,
+  must_change_password BOOLEAN     NOT NULL DEFAULT false,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -35,14 +29,14 @@ CREATE TABLE IF NOT EXISTS tasks (
   user_id     INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title       TEXT        NOT NULL,
   description TEXT        NOT NULL DEFAULT '',
-  status     TEXT        NOT NULL DEFAULT 'new',
-  priority   TEXT        NOT NULL DEFAULT 'med',
-  project_id INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
-  due        TEXT        NOT NULL DEFAULT '—',
-  tags       TEXT[]      NOT NULL DEFAULT '{}',
-  subtasks   INTEGER[],
-  comments   INTEGER     NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  status      TEXT        NOT NULL DEFAULT 'new',
+  priority    TEXT        NOT NULL DEFAULT 'med',
+  project_id  INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
+  due         TEXT        NOT NULL DEFAULT '—',
+  tags        TEXT[]      NOT NULL DEFAULT '{}',
+  subtasks    INTEGER[],
+  comments    INTEGER     NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -55,9 +49,3 @@ CREATE TABLE IF NOT EXISTS audit_log (
   meta        JSONB,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- ── Safe migration for existing DBs ──────────────────────────
--- (no-ops if columns already exist)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role                TEXT    NOT NULL DEFAULT 'user';
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active           BOOLEAN NOT NULL DEFAULT true;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;

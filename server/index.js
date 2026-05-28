@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cookieParser from 'cookie-parser';
 import pool from './db.js';
+import { migrate } from './migrate.js';
 import authRouter, { requireAuth } from './auth.js';
 import adminRouter from './admin.js';
 
@@ -140,4 +141,6 @@ app.get('*', (_req, res) => res.sendFile(join(__dirname, '../dist/index.html')))
 
 // ── Start ─────────────────────────────────────────────────────
 
-app.listen(PORT, () => console.log(`API  →  http://localhost:${PORT}/api`));
+migrate()
+  .then(() => app.listen(PORT, () => console.log(`API  →  http://localhost:${PORT}/api`)))
+  .catch((e) => { console.error('Migration failed:', e.message); process.exit(1); });
