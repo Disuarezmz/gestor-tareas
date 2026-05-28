@@ -3,6 +3,7 @@ import { I } from '../constants/icons.js';
 import { useApp } from '../contexts/AppContext.jsx';
 import { HW, Mono, SB, Dot, StateDot, Prio, Btn, Check, Ic } from '../components/primitives/index.jsx';
 import { PageTitle } from '../components/chrome/index.jsx';
+import { todayISO, formatDue } from '../utils/dates.js';
 
 export default function DashboardPage() {
   const { tasks, projects, navigate, setOpenTaskId, openCreateTask, selectedProject } = useApp();
@@ -10,11 +11,12 @@ export default function DashboardPage() {
   const baseTasks = selectedProject ? tasks.filter((t) => t.project === selectedProject) : tasks;
   const selectedProj = selectedProject ? projects.find((p) => p.id === selectedProject) : null;
 
-  const today = baseTasks.filter((t) => t.due === 'hoy');
+  const iso = todayISO();
+  const today = baseTasks.filter((t) => t.due === iso);
   const inExec = baseTasks.filter((t) => t.status === 'exec');
   const inWait = baseTasks.filter((t) => t.status === 'wait');
   const done = baseTasks.filter((t) => t.status === 'done');
-  const upcoming = baseTasks.filter((t) => t.status !== 'done' && t.due !== '—' && t.due !== 'hoy').slice(0, 6);
+  const upcoming = baseTasks.filter((t) => t.status !== 'done' && t.due !== '—' && t.due > iso).slice(0, 6);
 
   const stats = [
     { label: 'Tareas hoy', value: today.length, sub: `${today.filter(t => t.status === 'done').length} completadas`, color: 'var(--wf-accent)' },
@@ -60,7 +62,7 @@ export default function DashboardPage() {
                 <button onClick={() => navigate('list')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <Mono size={9} style={{ color: 'var(--wf-accent)', textDecoration: 'underline' }}>ver todas</Mono>
                 </button>
-                <button onClick={() => openCreateTask({ due: 'hoy' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                <button onClick={() => openCreateTask({ due: iso })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
                   <Ic d={I.plus} size={11} />
                 </button>
               </div>
@@ -81,7 +83,7 @@ export default function DashboardPage() {
                     {task.title}
                   </span>
                   <Prio level={task.priority} />
-                  <Mono size={9}>{task.due}</Mono>
+                  <Mono size={9}>{formatDue(task.due)}</Mono>
                 </div>
               ))}
             </SB>
@@ -105,7 +107,7 @@ export default function DashboardPage() {
                 }}>
                   <StateDot k={task.status} size={6} />
                   <span style={{ flex: 1, fontSize: 11, color: wfTokens.text }}>{task.title}</span>
-                  <Mono size={9} style={{ flexShrink: 0 }}>{task.due}</Mono>
+                  <Mono size={9} style={{ flexShrink: 0 }}>{formatDue(task.due)}</Mono>
                   {task.priority !== 'low' && <Prio level={task.priority} />}
                 </div>
               ))}

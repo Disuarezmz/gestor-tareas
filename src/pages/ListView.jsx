@@ -4,6 +4,7 @@ import { I } from '../constants/icons.js';
 import { useApp } from '../contexts/AppContext.jsx';
 import { HW, Mono, SB, Dot, StatePill, Prio, Tag, Btn, Check, Ic } from '../components/primitives/index.jsx';
 import { PageTitle } from '../components/chrome/index.jsx';
+import { formatDue } from '../utils/dates.js';
 
 const SORT_OPTIONS = [
   { value: 'due', label: 'Fecha ↑' },
@@ -20,8 +21,8 @@ function sortTasks(tasks, by) {
     if (by === 'priority') return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
     if (by === 'status') return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     if (by === 'title') return a.title.localeCompare(b.title);
-    // due: hoy first, — last
-    const duePrio = (d) => d === 'hoy' ? '0' : d === '—' ? 'z' : d;
+    // due: earliest first, — last
+    const duePrio = (d) => (!d || d === '—') ? 'z' : d;
     return duePrio(a.due).localeCompare(duePrio(b.due));
   });
 }
@@ -136,7 +137,7 @@ export default function ListView() {
                   <div style={{ display: 'flex', gap: 3, overflow: 'hidden' }}>
                     {task.tags.slice(0, 2).map((tag, j) => <Tag key={j}>{tag}</Tag>)}
                   </div>
-                  <Mono size={9}>{task.due}</Mono>
+                  <Mono size={9}>{formatDue(task.due)}</Mono>
                   <Prio level={task.priority} />
                   <div style={{ display: 'flex', justifyContent: 'center' }}><Ic d={I.more} size={11} /></div>
                 </div>

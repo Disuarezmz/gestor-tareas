@@ -4,6 +4,7 @@ import { useWF } from '../../contexts/ThemeContext.jsx';
 import { wfTokens } from '../../constants/tokens.js';
 import { I } from '../../constants/icons.js';
 import { HW, Mono, Ic } from '../primitives/index.jsx';
+import { todayISO } from '../../utils/dates.js';
 
 const PRIORITIES = [
   { value: 'high', label: 'Alta', color: 'oklch(72% 0.18 25)' },
@@ -30,7 +31,7 @@ export default function CreateTaskModal() {
     priority: createTaskDefaults.priority || 'med',
     status: createTaskDefaults.status || 'new',
     project: createTaskDefaults.project || '',
-    due: createTaskDefaults.due || '',
+    due: createTaskDefaults.due || todayISO(),
     tagInput: '',
     tags: [],
   });
@@ -60,7 +61,7 @@ export default function CreateTaskModal() {
       priority: form.priority,
       status: form.status,
       project: form.project || null,
-      due: form.due.trim() || '—',
+      due: form.due || '—',
       tags: form.tags,
     });
     setShowCreateTask(false);
@@ -159,11 +160,10 @@ export default function CreateTaskModal() {
 
               <Field label="FECHA DE VENCIMIENTO">
                 <input
-                  type="text"
+                  type="date"
                   value={form.due}
                   onChange={(e) => set('due', e.target.value)}
-                  placeholder="ej: 30 may, hoy..."
-                  style={inputCss}
+                  style={{ ...inputCss, colorScheme: 'dark' }}
                 />
               </Field>
             </div>

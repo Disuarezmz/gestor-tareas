@@ -4,6 +4,7 @@ import { useWF } from '../contexts/ThemeContext.jsx';
 import { wfTokens, stateColor } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
 import { HW, Mono, SB, Dot, StateDot, Prio, Tag, Ic } from './primitives/index.jsx';
+import { formatDue } from '../utils/dates.js';
 
 const PRIORITIES = [
   { value: 'high', label: 'Alta',  color: 'oklch(72% 0.18 25)' },
@@ -154,12 +155,19 @@ export default function TaskDetailPanel() {
 
             {/* Due date */}
             <MetaRow label="Vencimiento">
-              <input
-                value={task.due === '—' ? '' : task.due}
-                onChange={(e) => change('due', e.target.value || '—')}
-                placeholder="—"
-                style={{ ...inputCss }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="date"
+                  value={task.due === '—' ? '' : task.due}
+                  onChange={(e) => change('due', e.target.value || '—')}
+                  style={{ ...inputCss, flex: 1, colorScheme: 'dark' }}
+                />
+                {task.due !== '—' && (
+                  <span style={{ fontSize: 10, color: wfTokens.textDim, whiteSpace: 'nowrap' }}>
+                    {formatDue(task.due)}
+                  </span>
+                )}
+              </div>
             </MetaRow>
 
             {/* Tags */}

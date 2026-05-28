@@ -4,6 +4,7 @@ import { I } from '../constants/icons.js';
 import { useApp } from '../contexts/AppContext.jsx';
 import { HW, Mono, SB, Dot, Btn, Ic } from '../components/primitives/index.jsx';
 import { PageTitle } from '../components/chrome/index.jsx';
+import { parseISODate, dayISO, formatDue } from '../utils/dates.js';
 
 const DAYS_HEADER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -12,22 +13,9 @@ const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 's
 // TODAY is hardcoded to May 28 2026 (matches the app's demo data)
 const TODAY_Y = 2026, TODAY_M = 4, TODAY_D = 28; // month is 0-indexed
 
-function parseTaskDate(due, year, month) {
-  // "hoy" or "hoy HH:MM"
-  if (due && due.startsWith('hoy')) return { day: TODAY_D, month: TODAY_M, year: TODAY_Y };
-  // "28 may", "03 jun", "02 jun", "31 may", etc.
-  const m = due?.match(/^(\d{1,2})\s+([a-záéíóúñ]+)/i);
-  if (m) {
-    const day = parseInt(m[1], 10);
-    const monIdx = MONTHS_SHORT.findIndex((mn) => mn === m[2].toLowerCase());
-    if (monIdx >= 0) return { day, month: monIdx, year };
-  }
-  return null;
-}
-
 function getTasksForDay(day, month, year, tasks) {
   return tasks.filter((t) => {
-    const d = parseTaskDate(t.due, year, month);
+    const d = parseISODate(t.due);
     return d && d.day === day && d.month === month && d.year === year;
   });
 }
@@ -126,13 +114,7 @@ function WeekView({ weekStart, filtered, onTaskClick, onAdd }) {
             </div>
             {days.map((d, di) => {
               const dayTasks = getTasksForDay(d.getDate(), d.getMonth(), d.getFullYear(), filtered);
-              const hourTasks = dayTasks.filter((t) => {
-                if (t.due?.includes(':')) {
-                  const hh = parseInt(t.due.split(':')[0].split(' ').pop(), 10);
-                  return hh === h;
-                }
-                return h === 9; // default slot for all-day tasks
-              });
+              const hourTasks = dayTasks.filter(() => h === 9);
               return (
                 <div key={`${h}-${di}`} style={{
                   borderRight: `1px solid ${wfTokens.borderSoft}`,
@@ -192,13 +174,7 @@ function DayView({ date, filtered, onTaskClick }) {
       {/* Hours */}
       <div style={{ flex: 1 }}>
         {HOURS.map((h) => {
-          const hourTasks = dayTasks.filter((t) => {
-            if (t.due?.includes(':')) {
-              const hh = parseInt(t.due.split(':')[0].split(' ').pop(), 10);
-              return hh === h;
-            }
-            return h === 9;
-          });
+          const hourTasks = dayTasks.filter(() => h === 9);
           return (
             <div key={h} style={{ display: 'grid', gridTemplateColumns: '64px 1fr', borderBottom: `1px solid ${wfTokens.borderSoft}`, minHeight: 52 }}>
               <div style={{ padding: '6px 12px', borderRight: `1px solid ${wfTokens.borderSoft}` }}>
@@ -213,11 +189,6 @@ function DayView({ date, filtered, onTaskClick }) {
                     color: wfTokens.text, cursor: 'pointer',
                   }}>
                     {task.title}
-                    {task.due?.includes(':') && (
-                      <Mono size={9} style={{ marginLeft: 8 }}>
-                        {task.due.split(' ').find((p) => p.includes(':'))}
-                      </Mono>
-                    )}
                   </div>
                 ))}
               </div>
@@ -340,7 +311,7 @@ export default function CalendarPage() {
                     isPast={day && new Date(year, month, day) < new Date(TODAY_Y, TODAY_M, TODAY_D)}
                     tasks={day ? getTasksForDay(day, month, year, filtered) : []}
                     onTaskClick={setOpenTaskId}
-                    onAdd={() => openCreateTask({ due: day ? `${day} ${MONTHS_SHORT[month]}` : undefined })}
+                    onAdd={() => openCreateTask({ due: day ? dayISO(year, month, day) : undefined })}
                   />
                 ))}
               </div>

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { wfTokens, stateColor } from '../../constants/tokens.js';
 import { I } from '../../constants/icons.js';
 import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic } from '../primitives/index.jsx';
+import { formatDue } from '../../utils/dates.js';
 
 export function TopBar() {
   const { accent } = useWF();
@@ -225,7 +226,7 @@ export function TaskCard({ title, prio, due, tags = [], subs, comments, state, d
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
-        {due && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textMuted, fontSize: 9 }}><Ic d={I.cal} size={10} /> {due}</span>}
+        {due && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textMuted, fontSize: 9 }}><Ic d={I.cal} size={10} /> {formatDue(due)}</span>}
         <div style={{ flex: 1 }} />
         {comments != null && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textDim, fontSize: 9 }}><Ic d={I.comment} size={10} /> {comments}</span>}
       </div>

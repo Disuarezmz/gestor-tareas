@@ -5,6 +5,7 @@ import { useApp } from '../contexts/AppContext.jsx';
 import { useWF } from '../contexts/ThemeContext.jsx';
 import { HW, Mono, SB, Dot, Pill, Prio, Tag, StatePill, Btn, Ic, Check } from '../components/primitives/index.jsx';
 import { PageTitle } from '../components/chrome/index.jsx';
+import { formatDue } from '../utils/dates.js';
 
 const STATES = ['new', 'wait', 'exec', 'done'];
 
@@ -93,7 +94,7 @@ function TaskRow({ task, onClick, onToggleDone }) {
         </div>
       )}
       <Prio level={task.priority} />
-      {task.due && task.due !== '—' && <Mono size={9}>{task.due}</Mono>}
+      {task.due && task.due !== '—' && <Mono size={9}>{formatDue(task.due)}</Mono>}
     </div>
   );
 }
@@ -183,7 +184,7 @@ export default function ProjectsPage() {
                     </div>
                     <Mono size={9}>{done}/{total} completadas · {pct}%</Mono>
                     {activeProj.due && activeProj.due !== '—' && (
-                      <Mono size={9} style={{ color: wfTokens.textDim }}>· vence {activeProj.due}</Mono>
+                      <Mono size={9} style={{ color: wfTokens.textDim }}>· vence {formatDue(activeProj.due)}</Mono>
                     )}
                   </div>
                 </div>
