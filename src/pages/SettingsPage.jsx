@@ -3,6 +3,7 @@ import { wfTokens } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
 import { HW, Mono, SB, Btn, Check, Ic, StateDot } from '../components/primitives/index.jsx';
 import { PageTitle, SecHead } from '../components/chrome/index.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const NAV = [
   ['perfil', 'Perfil', 'user'],
@@ -23,11 +24,24 @@ function Field({ label, children }) {
   );
 }
 
-function Input({ value }) {
+function TextInput({ value, onChange, placeholder, type = 'text' }) {
+  const [focused, setFocused] = useState(false);
   return (
-    <div style={{ padding: '8px 12px', borderRadius: 5, border: `1px solid ${wfTokens.border}`, background: wfTokens.surfaceLo, fontSize: 11, color: wfTokens.text }}>
-      {value}
-    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        padding: '8px 12px', borderRadius: 5,
+        border: `1px solid ${focused ? 'var(--wf-accent)' : wfTokens.border}`,
+        background: wfTokens.surfaceLo, color: wfTokens.text,
+        fontSize: 11, fontFamily: 'inherit', outline: 'none',
+        width: '100%', boxSizing: 'border-box', transition: 'border-color 0.15s',
+      }}
+    />
   );
 }
 
@@ -73,6 +87,197 @@ function Tabs({ options, active }) {
   );
 }
 
+function StatusMsg({ type, text }) {
+  if (!text) return null;
+  const isErr = type === 'error';
+  return (
+    <div style={{
+      padding: '7px 12px', borderRadius: 5, fontSize: 11,
+      background: isErr ? 'oklch(18% 0.04 25)' : 'oklch(18% 0.04 150)',
+      border: `1px solid ${isErr ? 'oklch(35% 0.1 25)' : 'oklch(35% 0.1 150)'}`,
+      color: isErr ? 'oklch(72% 0.16 25)' : 'oklch(70% 0.09 150)',
+    }}>
+      {text}
+    </div>
+  );
+}
+
+function PerfilSection() {
+  const { user, updateProfile } = useAuth();
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [status, setStatus] = useState(null); // {type, text}
+  const [saving, setSaving] = useState(false);
+  const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
+
+  const save = async () => {
+    setSaving(true);
+    setStatus(null);
+    try {
+      await updateProfile({ name, email });
+      setStatus({ type: 'ok', text: 'Cambios guardados' });
+    } catch (e) {
+      setStatus({ type: 'error', text: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <SecHead size={20} sub="cómo te muestras">Perfil</SecHead>
+      <SB style={{ padding: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--wf-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: wfTokens.bg, fontFamily: '"JetBrains Mono", monospace' }}>{initials}</span>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, color: wfTokens.text, fontWeight: 500 }}>{user?.name}</div>
+          <Mono>{user?.email}</Mono>
+        </div>
+      </SB>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <Field label="Nombre">
+          <TextInput value={name} onChange={setName} placeholder="Tu nombre" />
+        </Field>
+        <Field label="Email">
+          <TextInput value={email} onChange={setEmail} placeholder="tu@email.com" type="email" />
+        </Field>
+        <Field label="Zona horaria"><Select value="Europe/Madrid · UTC+2" /></Field>
+        <Field label="Idioma"><Select value="Español" /></Field>
+      </div>
+      <div style={{ paddingTop: 4, borderTop: `1px solid ${wfTokens.borderSoft}` }}>
+        <SecHead size={16} sub="cuándo empieza tu semana">Preferencias</SecHead>
+        <SB style={{ padding: 14, marginTop: 10 }}>
+          <Row label="Primer día de la semana"><Tabs options={['Lunes', 'Domingo', 'Sábado']} active={0} /></Row>
+          <Row label="Formato 24h"><Toggle on /></Row>
+          <Row label="Vista por defecto"><Select value="Tablero" /></Row>
+        </SB>
+      </div>
+      {status && <StatusMsg type={status.type} text={status.text} />}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={save}
+          disabled={saving}
+          style={{
+            padding: '7px 14px', borderRadius: 5, border: 'none', cursor: saving ? 'wait' : 'pointer',
+            background: 'var(--wf-accent)', color: wfTokens.bg, fontWeight: 600, fontSize: 11,
+            fontFamily: 'inherit', opacity: saving ? 0.65 : 1,
+          }}
+        >
+          {saving ? '…' : 'Guardar cambios'}
+        </button>
+        <Btn ghost onClick={() => { setName(user?.name ?? ''); setEmail(user?.email ?? ''); setStatus(null); }}>
+          Cancelar
+        </Btn>
+      </div>
+    </>
+  );
+}
+
+function CuentaSection() {
+  const { changePassword, deleteAccount, logout } = useAuth();
+
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [pwStatus, setPwStatus] = useState(null);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState(null);
+
+  const savePassword = async () => {
+    if (next !== confirm) return setPwStatus({ type: 'error', text: 'Las contraseñas no coinciden' });
+    setPwSaving(true);
+    setPwStatus(null);
+    try {
+      await changePassword(current, next);
+      setPwStatus({ type: 'ok', text: 'Contraseña actualizada' });
+      setCurrent(''); setNext(''); setConfirm('');
+    } catch (e) {
+      setPwStatus({ type: 'error', text: e.message });
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteConfirm !== 'ELIMINAR') return setDeleteStatus({ type: 'error', text: 'Escribe ELIMINAR para confirmar' });
+    setDeleting(true);
+    try {
+      await deleteAccount();
+    } catch (e) {
+      setDeleteStatus({ type: 'error', text: e.message });
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <>
+      <SecHead size={20} sub="seguridad y datos">Cuenta</SecHead>
+
+      {/* Change password */}
+      <SB style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <SecHead size={14}>Cambiar contraseña</SecHead>
+        <Field label="Contraseña actual">
+          <TextInput type="password" value={current} onChange={setCurrent} placeholder="••••••" />
+        </Field>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Field label="Nueva contraseña">
+            <TextInput type="password" value={next} onChange={setNext} placeholder="••••••" />
+          </Field>
+          <Field label="Confirmar contraseña">
+            <TextInput type="password" value={confirm} onChange={setConfirm} placeholder="••••••" />
+          </Field>
+        </div>
+        {pwStatus && <StatusMsg type={pwStatus.type} text={pwStatus.text} />}
+        <div>
+          <button
+            onClick={savePassword}
+            disabled={pwSaving}
+            style={{
+              padding: '7px 14px', borderRadius: 5, border: 'none', cursor: pwSaving ? 'wait' : 'pointer',
+              background: 'var(--wf-accent)', color: wfTokens.bg, fontWeight: 600, fontSize: 11,
+              fontFamily: 'inherit', opacity: pwSaving ? 0.65 : 1,
+            }}
+          >
+            {pwSaving ? '…' : 'Actualizar contraseña'}
+          </button>
+        </div>
+      </SB>
+
+      {/* Danger zone */}
+      <SB style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, borderColor: 'oklch(35% 0.1 25)' }}>
+        <div>
+          <SecHead size={14}>Zona de peligro</SecHead>
+          <Mono style={{ marginTop: 4 }}>Esta acción eliminará tu cuenta y todos tus datos de forma permanente.</Mono>
+        </div>
+        <Field label="Escribe ELIMINAR para confirmar">
+          <TextInput value={deleteConfirm} onChange={setDeleteConfirm} placeholder="ELIMINAR" />
+        </Field>
+        {deleteStatus && <StatusMsg type={deleteStatus.type} text={deleteStatus.text} />}
+        <div>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{
+              padding: '7px 14px', borderRadius: 5,
+              border: '1px solid oklch(35% 0.1 25)',
+              cursor: deleting ? 'wait' : 'pointer',
+              background: 'oklch(18% 0.04 25)', color: 'oklch(72% 0.16 25)',
+              fontWeight: 600, fontSize: 11, fontFamily: 'inherit',
+              opacity: deleting ? 0.65 : 1,
+            }}
+          >
+            {deleting ? '…' : 'Eliminar cuenta'}
+          </button>
+        </div>
+      </SB>
+    </>
+  );
+}
+
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('perfil');
 
@@ -98,37 +303,9 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div style={{ padding: '16px 24px', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {activeSection === 'perfil' && (
-            <>
-              <SecHead size={20} sub="cómo te muestras">Perfil</SecHead>
-              <SB style={{ padding: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
-                <div style={{ width: 56, height: 56, borderRadius: 999, background: wfTokens.surfaceHi, border: `1px solid ${wfTokens.border}` }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: wfTokens.text, fontWeight: 500 }}>tu nombre</div>
-                  <Mono>tu@email.com</Mono>
-                </div>
-                <Btn ghost>Cambiar foto</Btn>
-              </SB>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <Field label="Nombre"><Input value="tu nombre" /></Field>
-                <Field label="Email"><Input value="tu@email.com" /></Field>
-                <Field label="Zona horaria"><Select value="Europe/Madrid · UTC+2" /></Field>
-                <Field label="Idioma"><Select value="Español" /></Field>
-              </div>
-              <div style={{ paddingTop: 4, borderTop: `1px solid ${wfTokens.borderSoft}` }}>
-                <SecHead size={16} sub="cuándo empieza tu semana">Preferencias</SecHead>
-                <SB style={{ padding: 14, marginTop: 10 }}>
-                  <Row label="Primer día de la semana"><Tabs options={['Lunes', 'Domingo', 'Sábado']} active={0} /></Row>
-                  <Row label="Formato 24h"><Toggle on /></Row>
-                  <Row label="Vista por defecto"><Select value="Tablero" /></Row>
-                </SB>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Btn primary>Guardar cambios</Btn>
-                <Btn ghost>Cancelar</Btn>
-              </div>
-            </>
-          )}
+          {activeSection === 'perfil' && <PerfilSection />}
+
+          {activeSection === 'cuenta' && <CuentaSection />}
 
           {activeSection === 'apariencia' && (
             <>
@@ -171,7 +348,7 @@ export default function SettingsPage() {
                       <span>{k.toUpperCase()}</span>
                     </div>
                   }>
-                    <Input value={v} />
+                    <TextInput value={v} onChange={() => {}} />
                   </Field>
                 ))}
               </div>
@@ -182,7 +359,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {!['perfil', 'apariencia', 'estados'].includes(activeSection) && (
+          {!['perfil', 'cuenta', 'apariencia', 'estados'].includes(activeSection) && (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: wfTokens.textDim }}>
               <Ic d={I.cog} size={32} />
               <Mono size={11}>{NAV.find(([k]) => k === activeSection)?.[1]} · próximamente</Mono>

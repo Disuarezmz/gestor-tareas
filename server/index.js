@@ -1,11 +1,18 @@
 import 'dotenv/config';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import pool from './db.js';
+import authRouter, { requireAuth } from './auth.js';
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 3001;
+
+// ── Auth ──────────────────────────────────────────────────────
+
+app.use('/api/auth', authRouter);
 
 // ── Serializers ───────────────────────────────────────────────
 
@@ -30,58 +37,63 @@ const wrap = (fn) => async (req, res) => {
 
 // ── Projects ──────────────────────────────────────────────────
 
-app.get('/api/projects', wrap(async (_req, res) => {
-  const { rows } = await pool.query('SELECT * FROM projects ORDER BY created_at');
+app.get('/api/projects', requireAuth, wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM projects WHERE user_id=$1 ORDER BY created_at', [req.userId],
+  );
   res.json(rows.map(toProject));
 }));
 
-app.post('/api/projects', wrap(async (req, res) => {
+app.post('/api/projects', requireAuth, wrap(async (req, res) => {
   const { name, desc = '', color = 'oklch(72% 0.13 285)', status = 'activo', due = '—' } = req.body;
   const { rows } = await pool.query(
-    'INSERT INTO projects (name, desc, color, status, due) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [name, desc, color, status, due],
+    'INSERT INTO projects (user_id,name,desc,color,status,due) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+    [req.userId, name, desc, color, status, due],
   );
   res.status(201).json(toProject(rows[0]));
 }));
 
-app.put('/api/projects/:id', wrap(async (req, res) => {
+app.put('/api/projects/:id', requireAuth, wrap(async (req, res) => {
   const MAP = { name: 'name', desc: 'desc', color: 'color', status: 'status', due: 'due' };
   const { sets, vals } = buildUpdate(MAP, req.body);
   if (!sets.length) return res.status(400).json({ error: 'No fields' });
-  vals.push(req.params.id);
+  vals.push(req.userId, req.params.id);
   const { rows } = await pool.query(
-    `UPDATE projects SET ${sets.join(',')} WHERE id=$${vals.length} RETURNING *`, vals,
+    `UPDATE projects SET ${sets.join(',')} WHERE user_id=$${vals.length - 1} AND id=$${vals.length} RETURNING *`,
+    vals,
   );
   if (!rows.length) return res.status(404).json({ error: 'Not found' });
   res.json(toProject(rows[0]));
 }));
 
-app.delete('/api/projects/:id', wrap(async (req, res) => {
-  await pool.query('DELETE FROM projects WHERE id=$1', [req.params.id]);
+app.delete('/api/projects/:id', requireAuth, wrap(async (req, res) => {
+  await pool.query('DELETE FROM projects WHERE user_id=$1 AND id=$2', [req.userId, req.params.id]);
   res.status(204).end();
 }));
 
 // ── Tasks ─────────────────────────────────────────────────────
 
-app.get('/api/tasks', wrap(async (_req, res) => {
-  const { rows } = await pool.query('SELECT * FROM tasks ORDER BY created_at');
+app.get('/api/tasks', requireAuth, wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT * FROM tasks WHERE user_id=$1 ORDER BY created_at', [req.userId],
+  );
   res.json(rows.map(toTask));
 }));
 
-app.post('/api/tasks', wrap(async (req, res) => {
+app.post('/api/tasks', requireAuth, wrap(async (req, res) => {
   const {
     title, desc = '', status = 'new', priority = 'med',
     project = null, due = '—', tags = [], subtasks = null, comments = 0,
   } = req.body;
   const { rows } = await pool.query(
-    `INSERT INTO tasks (title, desc, status, priority, project_id, due, tags, subtasks, comments)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-    [title, desc, status, priority, project || null, due, tags, subtasks, comments],
+    `INSERT INTO tasks (user_id,title,desc,status,priority,project_id,due,tags,subtasks,comments)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [req.userId, title, desc, status, priority, project || null, due, tags, subtasks, comments],
   );
   res.status(201).json(toTask(rows[0]));
 }));
 
-app.put('/api/tasks/:id', wrap(async (req, res) => {
+app.put('/api/tasks/:id', requireAuth, wrap(async (req, res) => {
   const MAP = {
     title: 'title', desc: 'desc', status: 'status', priority: 'priority',
     project: 'project_id', due: 'due', tags: 'tags', subtasks: 'subtasks', comments: 'comments',
@@ -90,16 +102,17 @@ app.put('/api/tasks/:id', wrap(async (req, res) => {
   if ('project' in body) body.project = body.project || null;
   const { sets, vals } = buildUpdate(MAP, body);
   if (!sets.length) return res.status(400).json({ error: 'No fields' });
-  vals.push(req.params.id);
+  vals.push(req.userId, req.params.id);
   const { rows } = await pool.query(
-    `UPDATE tasks SET ${sets.join(',')} WHERE id=$${vals.length} RETURNING *`, vals,
+    `UPDATE tasks SET ${sets.join(',')} WHERE user_id=$${vals.length - 1} AND id=$${vals.length} RETURNING *`,
+    vals,
   );
   if (!rows.length) return res.status(404).json({ error: 'Not found' });
   res.json(toTask(rows[0]));
 }));
 
-app.delete('/api/tasks/:id', wrap(async (req, res) => {
-  await pool.query('DELETE FROM tasks WHERE id=$1', [req.params.id]);
+app.delete('/api/tasks/:id', requireAuth, wrap(async (req, res) => {
+  await pool.query('DELETE FROM tasks WHERE user_id=$1 AND id=$2', [req.userId, req.params.id]);
   res.status(204).end();
 }));
 

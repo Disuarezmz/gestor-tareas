@@ -1,5 +1,6 @@
 import { useWF } from '../../contexts/ThemeContext.jsx';
 import { useApp } from '../../contexts/AppContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { wfTokens, stateColor } from '../../constants/tokens.js';
 import { I } from '../../constants/icons.js';
 import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic } from '../primitives/index.jsx';
@@ -7,6 +8,8 @@ import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic
 export function TopBar() {
   const { accent } = useWF();
   const { page, navigate, openCreateTask, setShowSearch } = useApp();
+  const { user } = useAuth();
+  const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   const tabs = [
     ['dashboard', 'Inicio'],
@@ -58,7 +61,13 @@ export function TopBar() {
       <button onClick={() => navigate('settings')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
         <Ic d={I.cog} size={14} />
       </button>
-      <div style={{ width: 24, height: 24, borderRadius: 999, background: wfTokens.surfaceHi, border: `1px solid ${wfTokens.border}` }} />
+      <div
+        onClick={() => navigate('settings')}
+        title={user?.name}
+        style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--wf-accent)', border: `1px solid ${wfTokens.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 700, color: wfTokens.bg, fontFamily: '"JetBrains Mono", monospace', letterSpacing: 0 }}>{initials}</span>
+      </div>
     </div>
   );
 }
@@ -66,6 +75,8 @@ export function TopBar() {
 export function Sidebar() {
   const { accent } = useWF();
   const { page, navigate, selectedProject, setSelectedProject, projects, setShowCreateProject } = useApp();
+  const { user, logout } = useAuth();
+  const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   const navItems = [
     ['dashboard', 'Inicio', I.grid],
@@ -137,16 +148,28 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Settings */}
-      <button onClick={() => navigate('settings')} style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '10px 8px 8px',
-        background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
-        borderRadius: 4, color: wfTokens.textMuted, fontFamily: 'inherit',
-        borderTop: `1px solid ${wfTokens.borderSoft}`,
-      }}>
-        <Ic d={I.cog} size={11} />
-        <span style={{ fontSize: 11 }}>Configuración</span>
-      </button>
+      {/* User + Settings + Logout */}
+      <div style={{ borderTop: `1px solid ${wfTokens.borderSoft}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <button onClick={() => navigate('settings')} style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px',
+          background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
+          borderRadius: 4, color: wfTokens.textMuted, fontFamily: 'inherit',
+        }}>
+          <div style={{ width: 18, height: 18, borderRadius: 999, background: 'var(--wf-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 8, fontWeight: 700, color: wfTokens.bg, fontFamily: '"JetBrains Mono", monospace' }}>{initials}</span>
+          </div>
+          <span style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{user?.name}</span>
+          <Ic d={I.cog} size={10} c={wfTokens.textDim} />
+        </button>
+        <button onClick={logout} style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+          background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
+          borderRadius: 4, color: wfTokens.textDim, fontFamily: 'inherit',
+        }}>
+          <Ic d={I.arrow} size={10} c={wfTokens.textDim} />
+          <span style={{ fontSize: 10 }}>Cerrar sesión</span>
+        </button>
+      </div>
     </div>
   );
 }

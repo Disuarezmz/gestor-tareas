@@ -20,4 +20,8 @@ export const I = {
   flag:    'M3 14V2m0 0h8l-2 3 2 3H3',
   comment: 'M2 3h12v8H7l-3 3v-3H2V3Z',
   attach:  'M10 7l-3 3a2 2 0 0 1-3-3l5-5a3 3 0 0 1 4 4l-5 5',
+  shield:  'M8 2L3 4v5c0 3.3 2 6.3 5 7.4 3-1.1 5-4.1 5-7.4V4L8 2z',
+  logout:  'M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 10l4-4-4-4M14 6H6',
+  ban:     'M4 4l8 8M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0Z',
+  person:  'M5 5a3 3 0 1 0 6 0 3 3 0 0 0-6 0ZM2 14c0-3 2-5 6-5s6 2 6 5',
 };
