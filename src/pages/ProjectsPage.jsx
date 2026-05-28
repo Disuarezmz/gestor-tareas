@@ -107,12 +107,15 @@ export default function ProjectsPage() {
   const [nameEdit, setNameEdit] = useState('');
   const [editingName, setEditingName] = useState(false);
   const nameInputRef = useRef(null);
+  const [descEdit, setDescEdit] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
 
   const activeProj = projects.find((p) => p.id === activeProjId);
 
   useEffect(() => {
-    if (activeProj) setNameEdit(activeProj.name);
+    if (activeProj) { setNameEdit(activeProj.name); setDescEdit(activeProj.desc || ''); }
     setEditingName(false);
+    setEditingDesc(false);
   }, [activeProjId]);
 
   useEffect(() => {
@@ -128,6 +131,12 @@ export default function ProjectsPage() {
 
   const saveDue = (val) => {
     updateProject(activeProjId, { due: val || '—' });
+  };
+
+  const saveDesc = () => {
+    const trimmed = descEdit.trim();
+    if (trimmed !== (activeProj.desc || '')) updateProject(activeProjId, { desc: trimmed });
+    setEditingDesc(false);
   };
   const projTasks = activeProjId ? tasks.filter((t) => t.project === activeProjId) : [];
   const done = projTasks.filter((t) => t.status === 'done').length;
@@ -215,8 +224,33 @@ export default function ProjectsPage() {
                       <Ic d={I.plus} size={10} /> Nueva tarea
                     </Btn>
                   </div>
-                  {activeProj.desc && (
-                    <div style={{ marginTop: 4, fontSize: 11, color: wfTokens.textMuted, lineHeight: 1.5 }}>{activeProj.desc}</div>
+                  {editingDesc ? (
+                    <textarea
+                      autoFocus
+                      value={descEdit}
+                      onChange={(e) => setDescEdit(e.target.value)}
+                      onBlur={saveDesc}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { setDescEdit(activeProj.desc || ''); setEditingDesc(false); } }}
+                      rows={2}
+                      style={{
+                        marginTop: 4, width: '100%', boxSizing: 'border-box',
+                        background: 'transparent', border: `1px solid ${wfTokens.border}`,
+                        borderRadius: 4, outline: 'none', resize: 'none',
+                        color: wfTokens.textMuted, fontSize: 11, lineHeight: 1.5,
+                        fontFamily: 'inherit', padding: '4px 6px',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      onClick={() => setEditingDesc(true)}
+                      style={{
+                        marginTop: 4, fontSize: 11, lineHeight: 1.5, cursor: 'text',
+                        color: activeProj.desc ? wfTokens.textMuted : wfTokens.textDim,
+                        minHeight: 18,
+                      }}
+                    >
+                      {activeProj.desc || 'Añadir descripción…'}
+                    </div>
                   )}
                   <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ flex: 1, height: 4, borderRadius: 2, background: wfTokens.border, overflow: 'hidden', maxWidth: 240 }}>
