@@ -148,6 +148,19 @@ export function Sidebar() {
         </div>
       </div>
 
+      {/* Admin link (admins only) */}
+      {user?.role === 'admin' && (
+        <button onClick={() => navigate('admin')} style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+          borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
+          background: page === 'admin' ? wfTokens.surfaceHi : 'transparent',
+          color: page === 'admin' ? 'var(--wf-accent)' : wfTokens.textDim, fontFamily: 'inherit',
+        }}>
+          <Ic d={I.shield} size={11} c={page === 'admin' ? 'var(--wf-accent)' : wfTokens.textDim} />
+          <span style={{ fontSize: 11 }}>Administración</span>
+        </button>
+      )}
+
       {/* User + Settings + Logout */}
       <div style={{ borderTop: `1px solid ${wfTokens.borderSoft}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <button onClick={() => navigate('settings')} style={{

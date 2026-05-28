@@ -17,6 +17,7 @@ import ListView from './pages/ListView.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 const THEME = {
   accent: 'oklch(75% 0.13 210)',
@@ -31,6 +32,7 @@ const PAGES = {
   calendar: CalendarPage,
   projects: ProjectsPage,
   settings: SettingsPage,
+  admin: AdminPage,
 };
 
 function AppShell() {

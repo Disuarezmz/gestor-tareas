@@ -3,6 +3,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import pool from './db.js';
 import authRouter, { requireAuth } from './auth.js';
+import adminRouter from './admin.js';
 
 const app = express();
 app.use(express.json());
@@ -10,9 +11,10 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT || 3001;
 
-// ── Auth ──────────────────────────────────────────────────────
+// ── Auth & Admin ──────────────────────────────────────────────
 
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 
 // ── Serializers ───────────────────────────────────────────────
 
