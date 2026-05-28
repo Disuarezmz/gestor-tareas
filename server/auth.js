@@ -20,6 +20,7 @@ function toUser(r) {
   return {
     id: r.id, name: r.name, email: r.email,
     avatarColor: r.avatar_color, role: r.role, isActive: r.is_active,
+    mustChangePassword: r.must_change_password,
   };
 }
 
@@ -108,6 +109,28 @@ router.put('/me', requireAuth, async (req, res) => {
       `UPDATE users SET ${sets.join(',')} WHERE id=$${i} RETURNING *`, vals,
     );
     res.json(toUser(rows[0]));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/auth/me/force-password — first-login forced change, no current password needed
+router.put('/me/force-password', requireAuth, async (req, res) => {
+  try {
+    const { next } = req.body;
+    if (!next) return res.status(400).json({ error: 'Falta la nueva contraseña' });
+    if (next.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    const { rows } = await pool.query('SELECT must_change_password FROM users WHERE id=$1', [req.userId]);
+    if (!rows.length || !rows[0].must_change_password)
+      return res.status(403).json({ error: 'No se requiere cambio de contraseña' });
+
+    const hash = await bcrypt.hash(next, 10);
+    const { rows: updated } = await pool.query(
+      'UPDATE users SET password_hash=$1, must_change_password=false WHERE id=$2 RETURNING *',
+      [hash, req.userId],
+    );
+    res.json(toUser(updated[0]));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

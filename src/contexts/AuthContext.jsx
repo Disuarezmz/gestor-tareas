@@ -53,6 +53,12 @@ export function AuthProvider({ children }) {
     await authApi('/me/password', { method: 'PUT', body: JSON.stringify({ current, next }) });
   }, []);
 
+  const forceChangePassword = useCallback(async (next) => {
+    const u = await authApi('/me/force-password', { method: 'PUT', body: JSON.stringify({ next }) });
+    setUser(u);
+    return u;
+  }, []);
+
   const deleteAccount = useCallback(async () => {
     await authApi('/me', { method: 'DELETE' });
     setUser(null);
@@ -62,7 +68,7 @@ export function AuthProvider({ children }) {
     <AuthCtx.Provider value={{
       user, authLoading,
       login, register, logout,
-      updateProfile, changePassword, deleteAccount,
+      updateProfile, changePassword, forceChangePassword, deleteAccount,
     }}>
       {children}
     </AuthCtx.Provider>

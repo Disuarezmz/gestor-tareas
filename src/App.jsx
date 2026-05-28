@@ -10,6 +10,7 @@ import CreateTaskModal from './components/modals/CreateTaskModal.jsx';
 import CreateProjectModal from './components/modals/CreateProjectModal.jsx';
 import SearchBar from './components/SearchBar.jsx';
 import AuthPage from './pages/AuthPage.jsx';
+import ForceChangePasswordPage from './pages/ForceChangePasswordPage.jsx';
 
 import DashboardPage from './pages/DashboardPage.jsx';
 import BoardPage from './pages/BoardPage.jsx';
@@ -100,6 +101,7 @@ function Root() {
   );
 
   if (!user) return <AuthPage />;
+  if (user.mustChangePassword) return <ForceChangePasswordPage />;
 
   return (
     <AppProvider>

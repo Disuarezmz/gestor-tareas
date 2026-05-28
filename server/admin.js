@@ -165,7 +165,7 @@ router.post('/users', requireAdmin, wrap(async (req, res) => {
   const { rows: [actor] } = await pool.query('SELECT name FROM users WHERE id=$1', [req.userId]);
   const hash = await bcrypt.hash(password, 10);
   const { rows } = await pool.query(
-    'INSERT INTO users (name,email,password_hash,role) VALUES ($1,$2,$3,$4) RETURNING *',
+    'INSERT INTO users (name,email,password_hash,role,must_change_password) VALUES ($1,$2,$3,$4,true) RETURNING *',
     [name.trim(), email.toLowerCase(), hash, role],
   );
   await audit(req.userId, actor.name, 'user.create', rows[0].id, rows[0].name, { role });

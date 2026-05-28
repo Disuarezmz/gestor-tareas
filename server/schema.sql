@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT        NOT NULL UNIQUE,
   password_hash TEXT        NOT NULL,
   avatar_color  TEXT        NOT NULL DEFAULT 'oklch(72% 0.13 210)',
-  role          TEXT        NOT NULL DEFAULT 'user',   -- 'user' | 'admin'
-  is_active     BOOLEAN     NOT NULL DEFAULT true,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  role                TEXT        NOT NULL DEFAULT 'user',   -- 'user' | 'admin'
+  is_active           BOOLEAN     NOT NULL DEFAULT true,
+  must_change_password BOOLEAN    NOT NULL DEFAULT false,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -57,5 +58,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 -- ── Safe migration for existing DBs ──────────────────────────
 -- (no-ops if columns already exist)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role      TEXT    NOT NULL DEFAULT 'user';
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role                TEXT    NOT NULL DEFAULT 'user';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active           BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
