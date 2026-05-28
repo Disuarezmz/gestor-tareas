@@ -1,0 +1,21 @@
+:root {
+  --wf-accent: oklch(75% 0.13 210);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0f0f13;
+  color: #e6e6ee;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+#root {
+  height: 100%;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--wf-accent) 40%, transparent);
+}
