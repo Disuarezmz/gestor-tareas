@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { wfTokens, stateColor } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
 import { useApp } from '../contexts/AppContext.jsx';
@@ -100,12 +100,35 @@ function TaskRow({ task, onClick, onToggleDone }) {
 }
 
 export default function ProjectsPage() {
-  const { tasks, projects, setOpenTaskId, openCreateTask, setShowCreateProject, deleteProject, updateTask } = useApp();
+  const { tasks, projects, setOpenTaskId, openCreateTask, setShowCreateProject, deleteProject, updateTask, updateProject } = useApp();
   const { states, accent } = useWF();
 
   const [activeProjId, setActiveProjId] = useState(projects[0]?.id ?? null);
+  const [nameEdit, setNameEdit] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const nameInputRef = useRef(null);
 
   const activeProj = projects.find((p) => p.id === activeProjId);
+
+  useEffect(() => {
+    if (activeProj) setNameEdit(activeProj.name);
+    setEditingName(false);
+  }, [activeProjId]);
+
+  useEffect(() => {
+    if (editingName) nameInputRef.current?.select();
+  }, [editingName]);
+
+  const saveName = () => {
+    const trimmed = nameEdit.trim();
+    if (trimmed && trimmed !== activeProj.name) updateProject(activeProjId, { name: trimmed });
+    else setNameEdit(activeProj.name);
+    setEditingName(false);
+  };
+
+  const saveDue = (val) => {
+    updateProject(activeProjId, { due: val || '—' });
+  };
   const projTasks = activeProjId ? tasks.filter((t) => t.project === activeProjId) : [];
   const done = projTasks.filter((t) => t.status === 'done').length;
   const total = projTasks.length;
@@ -168,7 +191,24 @@ export default function ProjectsPage() {
                 <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, background: activeProj.color, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <HW size={24}>{activeProj.name}</HW>
+                    {editingName ? (
+                      <input
+                        ref={nameInputRef}
+                        value={nameEdit}
+                        onChange={(e) => setNameEdit(e.target.value)}
+                        onBlur={saveName}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setNameEdit(activeProj.name); setEditingName(false); } }}
+                        style={{
+                          fontSize: 24, fontFamily: '"Caveat", cursive', fontWeight: 700,
+                          background: 'transparent', border: 'none', borderBottom: `2px solid ${accent}`,
+                          outline: 'none', color: wfTokens.text, padding: '0 2px', minWidth: 120,
+                        }}
+                      />
+                    ) : (
+                      <HW size={24} style={{ cursor: 'text' }} onClick={() => setEditingName(true)}>
+                        {activeProj.name}
+                      </HW>
+                    )}
                     {activeProj.status !== 'activo' && <Pill c={wfTokens.textDim}>{activeProj.status}</Pill>}
                     <div style={{ flex: 1 }} />
                     <Btn primary onClick={() => openCreateTask({ project: activeProjId })}>
@@ -183,9 +223,24 @@ export default function ProjectsPage() {
                       <div style={{ height: '100%', width: `${pct}%`, background: activeProj.color, borderRadius: 2, transition: 'width 0.3s' }} />
                     </div>
                     <Mono size={9}>{done}/{total} completadas · {pct}%</Mono>
-                    {activeProj.due && activeProj.due !== '—' && (
-                      <Mono size={9} style={{ color: wfTokens.textDim }}>· vence {formatDue(activeProj.due)}</Mono>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Ic d={I.cal} size={10} c={wfTokens.textDim} />
+                      <input
+                        type="date"
+                        value={activeProj.due === '—' ? '' : activeProj.due}
+                        onChange={(e) => saveDue(e.target.value)}
+                        style={{
+                          background: 'transparent', border: 'none', outline: 'none',
+                          color: activeProj.due && activeProj.due !== '—' ? wfTokens.textMuted : wfTokens.textDim,
+                          fontSize: 9, fontFamily: 'inherit', cursor: 'pointer',
+                          colorScheme: 'dark', width: activeProj.due && activeProj.due !== '—' ? 'auto' : 80,
+                        }}
+                        title="Fecha de vencimiento"
+                      />
+                      {activeProj.due && activeProj.due !== '—' && (
+                        <Mono size={9} style={{ color: wfTokens.textDim }}>({formatDue(activeProj.due)})</Mono>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
