@@ -13,9 +13,6 @@ export function TopBar() {
 
   const tabs = [
     ['dashboard', 'Inicio'],
-    ['board', 'Tablero'],
-    ['list', 'Lista'],
-    ['calendar', 'Calendario'],
     ['projects', 'Proyectos'],
   ];
 
