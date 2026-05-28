@@ -5,13 +5,16 @@ import { HW, Mono, SB, Dot, StateDot, Prio, Btn, Check, Ic } from '../components
 import { PageTitle } from '../components/chrome/index.jsx';
 
 export default function DashboardPage() {
-  const { tasks, projects, navigate, setOpenTaskId, openCreateTask } = useApp();
+  const { tasks, projects, navigate, setOpenTaskId, openCreateTask, selectedProject } = useApp();
 
-  const today = tasks.filter((t) => t.due === 'hoy');
-  const inExec = tasks.filter((t) => t.status === 'exec');
-  const inWait = tasks.filter((t) => t.status === 'wait');
-  const done = tasks.filter((t) => t.status === 'done');
-  const upcoming = tasks.filter((t) => t.status !== 'done' && t.due !== '—' && t.due !== 'hoy').slice(0, 6);
+  const baseTasks = selectedProject ? tasks.filter((t) => t.project === selectedProject) : tasks;
+  const selectedProj = selectedProject ? projects.find((p) => p.id === selectedProject) : null;
+
+  const today = baseTasks.filter((t) => t.due === 'hoy');
+  const inExec = baseTasks.filter((t) => t.status === 'exec');
+  const inWait = baseTasks.filter((t) => t.status === 'wait');
+  const done = baseTasks.filter((t) => t.status === 'done');
+  const upcoming = baseTasks.filter((t) => t.status !== 'done' && t.due !== '—' && t.due !== 'hoy').slice(0, 6);
 
   const stats = [
     { label: 'Tareas hoy', value: today.length, sub: `${today.filter(t => t.status === 'done').length} completadas`, color: 'var(--wf-accent)' },
@@ -24,7 +27,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <PageTitle sub="jueves · 28 mayo 2026" right={
+      <PageTitle sub={selectedProj ? `Proyecto: ${selectedProj.name}` : 'jueves · 28 mayo 2026'} right={
         <div style={{ display: 'flex', gap: 6 }}>
           <Btn ghost onClick={() => navigate('board')}><Ic d={I.grid} size={10} /> Tablero</Btn>
           <Btn primary onClick={() => openCreateTask()}>
@@ -148,8 +151,8 @@ export default function DashboardPage() {
             <SB style={{ padding: 14 }}>
               <HW size={16} style={{ display: 'block', marginBottom: 12 }}>Por estado</HW>
               {['new', 'wait', 'exec', 'done'].map((k) => {
-                const count = tasks.filter((t) => t.status === k).length;
-                const pct = tasks.length ? Math.round((count / tasks.length) * 100) : 0;
+                const count = baseTasks.filter((t) => t.status === k).length;
+                const pct = baseTasks.length ? Math.round((count / baseTasks.length) * 100) : 0;
                 return (
                   <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <StateDot k={k} size={6} />
