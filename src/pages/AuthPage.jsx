@@ -30,40 +30,23 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoFocus }
 }
 
 export default function AuthPage() {
-  const { login, register } = useAuth();
-  const [mode, setMode] = useState('login');
-  const [name, setName] = useState('');
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (mode === 'register' && password !== confirm) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
     setLoading(true);
     try {
-      if (mode === 'login') {
-        await login(email, password);
-      } else {
-        await register(name, email, password);
-      }
+      await login(email, password);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const switchMode = () => {
-    setMode((m) => (m === 'login' ? 'register' : 'login'));
-    setError('');
-    setName(''); setEmail(''); setPassword(''); setConfirm('');
   };
 
   return (
@@ -87,35 +70,23 @@ export default function AuthPage() {
         }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: wfTokens.text, marginBottom: 4 }}>
-              {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+              Iniciar sesión
             </div>
-            <Mono>
-              {mode === 'login' ? 'Accede a tus tareas y proyectos' : 'Empieza a organizar tu trabajo'}
-            </Mono>
+            <Mono>Accede a tus tareas y proyectos</Mono>
           </div>
 
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {mode === 'register' && (
-              <Field label="Nombre" value={name} onChange={setName} placeholder="Tu nombre" autoFocus />
-            )}
             <Field
               label="Email" type="email"
               value={email} onChange={setEmail}
               placeholder="tu@email.com"
-              autoFocus={mode === 'login'}
+              autoFocus
             />
             <Field
               label="Contraseña" type="password"
               value={password} onChange={setPassword}
               placeholder="••••••"
             />
-            {mode === 'register' && (
-              <Field
-                label="Confirmar contraseña" type="password"
-                value={confirm} onChange={setConfirm}
-                placeholder="••••••"
-              />
-            )}
 
             {error && (
               <div style={{
@@ -138,22 +109,9 @@ export default function AuthPage() {
                 opacity: loading ? 0.65 : 1, transition: 'opacity 0.15s',
               }}
             >
-              {loading ? '…' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+              {loading ? '…' : 'Entrar'}
             </button>
           </form>
-        </div>
-
-        {/* Switch */}
-        <div style={{ textAlign: 'center' }}>
-          <Mono>
-            {mode === 'login' ? '¿Sin cuenta? ' : '¿Ya tienes cuenta? '}
-            <span
-              onClick={switchMode}
-              style={{ color: 'var(--wf-accent)', cursor: 'pointer', textDecoration: 'underline' }}
-            >
-              {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
-            </span>
-          </Mono>
         </div>
       </div>
     </div>

@@ -32,12 +32,6 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
-  const register = useCallback(async (name, email, password) => {
-    const u = await authApi('/register', { method: 'POST', body: JSON.stringify({ name, email, password }) });
-    setUser(u);
-    return u;
-  }, []);
-
   const logout = useCallback(async () => {
     await authApi('/logout', { method: 'POST' });
     setUser(null);
@@ -67,7 +61,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthCtx.Provider value={{
       user, authLoading,
-      login, register, logout,
+      login, logout,
       updateProfile, changePassword, forceChangePassword, deleteAccount,
     }}>
       {children}

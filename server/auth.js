@@ -24,35 +24,6 @@ function toUser(r) {
   };
 }
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    if (!name?.trim() || !email || !password)
-      return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
-    if (password.length < 6)
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-
-    const exists = await pool.query('SELECT id FROM users WHERE email=$1', [email.toLowerCase()]);
-    if (exists.rows.length)
-      return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
-
-    // First registered user becomes admin
-    const { rows: [{ count }] } = await pool.query('SELECT COUNT(*) FROM users');
-    const role = count === '0' ? 'admin' : 'user';
-
-    const hash = await bcrypt.hash(password, 10);
-    const { rows } = await pool.query(
-      'INSERT INTO users (name,email,password_hash,role) VALUES ($1,$2,$3,$4) RETURNING *',
-      [name.trim(), email.toLowerCase(), hash, role],
-    );
-    res.cookie('token', sign(rows[0].id), COOKIE_OPTS);
-    res.status(201).json(toUser(rows[0]));
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
