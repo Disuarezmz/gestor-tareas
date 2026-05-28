@@ -1,4 +1,5 @@
 import React from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { AppProvider, useApp } from './contexts/AppContext.jsx';
 import { WFTheme } from './contexts/ThemeContext.jsx';
 import { wfTokens } from './constants/tokens.js';
@@ -8,6 +9,7 @@ import TaskDetailPanel from './components/TaskDetailPanel.jsx';
 import CreateTaskModal from './components/modals/CreateTaskModal.jsx';
 import CreateProjectModal from './components/modals/CreateProjectModal.jsx';
 import SearchBar from './components/SearchBar.jsx';
+import AuthPage from './pages/AuthPage.jsx';
 
 import DashboardPage from './pages/DashboardPage.jsx';
 import BoardPage from './pages/BoardPage.jsx';
@@ -15,6 +17,7 @@ import ListView from './pages/ListView.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 const THEME = {
   accent: 'oklch(75% 0.13 210)',
@@ -29,13 +32,13 @@ const PAGES = {
   calendar: CalendarPage,
   projects: ProjectsPage,
   settings: SettingsPage,
+  admin: AdminPage,
 };
 
 function AppShell() {
   const { page, openTaskId, showCreateTask, showCreateProject, showSearch, setShowSearch, openCreateTask, loading, error } = useApp();
   const ActivePage = PAGES[page] ?? BoardPage;
 
-  // Global Cmd+K / Ctrl+K shortcut
   React.useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -87,16 +90,34 @@ function AppShell() {
   );
 }
 
+function Root() {
+  const { user, authLoading } = useAuth();
+
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: wfTokens.bg }}>
+      <span style={{ fontSize: 11, color: wfTokens.textDim, fontFamily: '"JetBrains Mono", monospace' }}>cargando…</span>
+    </div>
+  );
+
+  if (!user) return <AuthPage />;
+
+  return (
+    <AppProvider>
+      <AppShell />
+    </AppProvider>
+  );
+}
+
 export default function App() {
   React.useEffect(() => {
     document.documentElement.style.setProperty('--wf-accent', THEME.accent);
   }, []);
 
   return (
-    <AppProvider>
+    <AuthProvider>
       <WFTheme.Provider value={THEME}>
-        <AppShell />
+        <Root />
       </WFTheme.Provider>
-    </AppProvider>
+    </AuthProvider>
   );
 }
