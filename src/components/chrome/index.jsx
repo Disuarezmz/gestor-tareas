@@ -48,7 +48,7 @@ export function TopBar() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('dashboard')}>
         <div style={{ width: 18, height: 18, borderRadius: 4, background: `linear-gradient(135deg, ${accent}, color-mix(in oklch, ${accent} 50%, ${wfTokens.bg}))` }} />
-        {!mobile && <HW size={17}>tareas</HW>}
+        {!mobile && <HW size={17}>DisuTasks</HW>}
       </div>
 
       {!mobile && (

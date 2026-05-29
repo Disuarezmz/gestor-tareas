@@ -58,7 +58,7 @@ export default function ForceChangePasswordPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg, var(--wf-accent), oklch(55% 0.1 210))' }} />
-          <HW size={22}>tareas</HW>
+          <HW size={22}>DisuTasks</HW>
         </div>
 
         <div style={{

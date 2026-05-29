@@ -12,6 +12,34 @@ const PRIORITIES = [
   { value: 'low',  label: 'Baja', color: 'oklch(65% 0.05 220)' },
 ];
 
+function ModalSubmitButton({ accent, enabled }) {
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      type="submit"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        padding: '8px 20px', borderRadius: 6,
+        background: enabled ? accent : wfTokens.border,
+        color: '#0e0e14', border: 'none',
+        cursor: enabled ? 'pointer' : 'not-allowed',
+        fontSize: 11, fontFamily: 'inherit', fontWeight: 600,
+        transform: pressed ? 'scale(0.97)' : (hovered && enabled) ? 'translateY(-1px)' : 'translateY(0)',
+        boxShadow: (hovered && enabled)
+          ? `0 6px 18px color-mix(in oklch, ${accent} 40%, transparent)`
+          : enabled ? `0 2px 8px color-mix(in oklch, ${accent} 20%, transparent)` : 'none',
+        transition: 'background 0.15s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s',
+      }}
+    >
+      Crear tarea
+    </button>
+  );
+}
+
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -153,6 +181,9 @@ export default function CreateTaskModal() {
                       fontFamily: 'inherit', border: `1px solid ${form.priority === value ? color : wfTokens.border}`,
                       background: form.priority === value ? `color-mix(in oklch, ${color} 18%, ${wfTokens.surfaceLo})` : wfTokens.surfaceLo,
                       color: form.priority === value ? color : wfTokens.textMuted,
+                      boxShadow: form.priority === value ? `0 0 10px color-mix(in oklch, ${color} 22%, transparent)` : 'none',
+                      transform: form.priority === value ? 'translateY(-1px)' : 'translateY(0)',
+                      transition: 'background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.22s, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}>
                       {label}
                     </button>
@@ -214,13 +245,7 @@ export default function CreateTaskModal() {
             <button type="button" onClick={() => setShowCreateTask(false)} style={{ padding: '8px 16px', borderRadius: 5, background: 'transparent', color: wfTokens.textMuted, border: `1px solid ${wfTokens.border}`, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>
               Cancelar
             </button>
-            <button type="submit" style={{
-              padding: '8px 20px', borderRadius: 5, background: form.title.trim() ? accent : wfTokens.border,
-              color: '#0e0e14', border: 'none', cursor: form.title.trim() ? 'pointer' : 'not-allowed',
-              fontSize: 11, fontFamily: 'inherit', fontWeight: 600,
-            }}>
-              Crear tarea
-            </button>
+            <ModalSubmitButton accent={accent} enabled={!!form.title.trim()} />
           </div>
         </form>
       </div>

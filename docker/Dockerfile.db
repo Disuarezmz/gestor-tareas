@@ -1,0 +1,18 @@
+# Stage 1: extract pg16 binaries (needed by pg_upgrade to migrate old clusters)
+FROM postgres:16-alpine AS pg16
+
+# Stage 2: final image — pg17 with embedded pg16 binaries for auto-migration
+FROM postgres:17-alpine
+
+# Copy pg16 server binaries and libraries to an isolated path
+COPY --from=pg16 /usr/local/bin/postgres       /usr/local/pg16/bin/postgres
+COPY --from=pg16 /usr/local/bin/pg_ctl         /usr/local/pg16/bin/pg_ctl
+COPY --from=pg16 /usr/local/bin/pg_resetwal    /usr/local/pg16/bin/pg_resetwal
+COPY --from=pg16 /usr/local/lib/postgresql/    /usr/local/pg16/lib/postgresql/
+COPY --from=pg16 /usr/local/share/postgresql/  /usr/local/pg16/share/postgresql/
+
+COPY docker/pg-entrypoint.sh /usr/local/bin/pg-entrypoint.sh
+RUN chmod +x /usr/local/bin/pg-entrypoint.sh
+
+ENTRYPOINT ["pg-entrypoint.sh"]
+CMD ["postgres"]

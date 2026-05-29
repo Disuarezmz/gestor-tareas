@@ -1,12 +1,19 @@
 services:
   db:
-    image: postgres:16-alpine
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.db
     environment:
       POSTGRES_DB: gestor_tareas
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      # PGDATA must stay at /data subdir so the parent dir has room for
+      # migration staging (data_new_pg17/) and backup (data_pg16_backup/).
+      # All three dirs land on the same volume → pg_upgrade --link works.
+      PGDATA: /var/lib/postgresql/data
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Mount at PARENT of PGDATA so migration dirs share the same filesystem
+      - pgdata:/var/lib/postgresql
       - ./server/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
       - "5433:5432"

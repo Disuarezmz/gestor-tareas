@@ -65,8 +65,20 @@ function Row({ label, children }) {
 
 function Toggle({ on }) {
   return (
-    <div style={{ width: 30, height: 16, borderRadius: 999, background: on ? 'var(--wf-accent)' : wfTokens.border, position: 'relative', flexShrink: 0, cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 2, left: on ? 16 : 2, width: 12, height: 12, borderRadius: 999, background: '#0e0e14', transition: 'left 0.15s' }} />
+    <div style={{
+      width: 32, height: 18, borderRadius: 999,
+      background: on ? 'var(--wf-accent)' : wfTokens.border,
+      position: 'relative', flexShrink: 0, cursor: 'pointer',
+      transition: 'background 0.22s',
+      boxShadow: on ? '0 0 10px color-mix(in oklch, var(--wf-accent) 30%, transparent)' : 'none',
+    }}>
+      <div style={{
+        position: 'absolute', top: 3, left: on ? 17 : 3,
+        width: 12, height: 12, borderRadius: 999,
+        background: on ? '#0e0e14' : wfTokens.textDim,
+        transition: 'left 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+      }} />
     </div>
   );
 }
@@ -289,7 +301,7 @@ export default function SettingsPage() {
         {/* Inner sidebar */}
         <div style={{ borderRight: `1px solid ${wfTokens.borderSoft}`, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV.map(([k, label, icon]) => (
-            <button key={k} onClick={() => setActiveSection(k)} style={{
+            <button key={k} onClick={() => setActiveSection(k)} className="wf-nav-btn" style={{
               padding: '8px 10px', borderRadius: 5, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
               background: activeSection === k ? wfTokens.surfaceHi : 'transparent',
               color: activeSection === k ? wfTokens.text : wfTokens.textMuted, fontSize: 11,
@@ -302,7 +314,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content */}
-        <div style={{ padding: '16px 24px', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div key={activeSection} className="wf-page-fade" style={{ padding: '16px 24px', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {activeSection === 'perfil' && <PerfilSection />}
 
           {activeSection === 'cuenta' && <CuentaSection />}
