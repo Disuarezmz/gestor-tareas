@@ -25,6 +25,7 @@ export function AppProvider({ children }) {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [createTaskDefaults, setCreateTaskDefaults] = useState({});
   const [showSearch, setShowSearch] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -170,6 +171,7 @@ export function AppProvider({ children }) {
       showCreateTask, setShowCreateTask,
       showCreateProject, setShowCreateProject,
       showSearch, setShowSearch,
+      sidebarOpen, setSidebarOpen,
       createTaskDefaults, openCreateTask,
       tasks, projects, groups,
       groupMembers, projectMembers,

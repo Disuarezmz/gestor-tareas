@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useWF } from '../../contexts/ThemeContext.jsx';
 import { useApp } from '../../contexts/AppContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -6,10 +7,22 @@ import { I } from '../../constants/icons.js';
 import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic, UserAvatar } from '../primitives/index.jsx';
 import { formatDue } from '../../utils/dates.js';
 
+function useMobile(breakpoint = 768) {
+  const [mobile, setMobile] = useState(() => window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e) => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return mobile;
+}
+
 export function TopBar() {
   const { accent } = useWF();
-  const { page, navigate, openCreateTask, setShowSearch } = useApp();
+  const { page, navigate, openCreateTask, setShowSearch, sidebarOpen, setSidebarOpen } = useApp();
   const { user } = useAuth();
+  const mobile = useMobile();
   const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   const tabs = [
@@ -20,50 +33,68 @@ export function TopBar() {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 14, padding: '0 18px',
+      display: 'flex', alignItems: 'center', gap: mobile ? 6 : 14, padding: `0 ${mobile ? 10 : 18}px`,
       height: 44, borderBottom: `1px solid ${wfTokens.borderSoft}`,
       background: wfTokens.surfaceLo, flexShrink: 0,
     }}>
+      {mobile && (
+        <button
+          onClick={() => setSidebarOpen((v) => !v)}
+          style={{ background: sidebarOpen ? wfTokens.surfaceHi : 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', borderRadius: 4 }}
+        >
+          <Ic d={I.menu} size={14} c={wfTokens.textMuted} />
+        </button>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('dashboard')}>
         <div style={{ width: 18, height: 18, borderRadius: 4, background: `linear-gradient(135deg, ${accent}, color-mix(in oklch, ${accent} 50%, ${wfTokens.bg}))` }} />
-        <HW size={17}>tareas</HW>
+        {!mobile && <HW size={17}>tareas</HW>}
       </div>
 
-      <div style={{ display: 'flex', gap: 2, marginLeft: 14 }}>
-        {tabs.map(([k, label]) => (
-          <button key={k} onClick={() => navigate(k)} style={{
-            padding: '6px 11px', borderRadius: 5, cursor: 'pointer',
-            background: page === k ? wfTokens.surfaceHi : 'transparent',
-            color: page === k ? wfTokens.text : wfTokens.textMuted,
-            fontSize: 11, border: page === k ? `1px solid ${wfTokens.border}` : '1px solid transparent',
-            fontFamily: 'inherit',
-          }}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {!mobile && (
+        <div style={{ display: 'flex', gap: 2, marginLeft: 14 }}>
+          {tabs.map(([k, label]) => (
+            <button key={k} onClick={() => navigate(k)} style={{
+              padding: '6px 11px', borderRadius: 5, cursor: 'pointer',
+              background: page === k ? wfTokens.surfaceHi : 'transparent',
+              color: page === k ? wfTokens.text : wfTokens.textMuted,
+              fontSize: 11, border: page === k ? `1px solid ${wfTokens.border}` : '1px solid transparent',
+              fontFamily: 'inherit',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div style={{ flex: 1 }} />
 
-      {/* Search */}
-      <div onClick={() => setShowSearch(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 5, border: `1px solid ${wfTokens.border}`, background: wfTokens.surface, width: 220, color: wfTokens.textDim, cursor: 'pointer' }}>
-        <Ic d={I.search} />
-        <Mono>buscar...</Mono>
-        <div style={{ flex: 1 }} />
-        <Mono color={wfTokens.textDim}>⌘K</Mono>
-      </div>
+      {mobile ? (
+        <button onClick={() => setShowSearch(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', borderRadius: 4 }}>
+          <Ic d={I.search} size={14} c={wfTokens.textMuted} />
+        </button>
+      ) : (
+        <div onClick={() => setShowSearch(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 5, border: `1px solid ${wfTokens.border}`, background: wfTokens.surface, width: 220, color: wfTokens.textDim, cursor: 'pointer' }}>
+          <Ic d={I.search} />
+          <Mono>buscar...</Mono>
+          <div style={{ flex: 1 }} />
+          <Mono color={wfTokens.textDim}>⌘K</Mono>
+        </div>
+      )}
 
-      <button onClick={() => openCreateTask()} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', borderRadius: 4 }} title="Nueva tarea (⌘N)">
+      <button onClick={() => openCreateTask()} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: mobile ? 6 : 4, display: 'flex', borderRadius: 4 }} title="Nueva tarea (⌘N)">
         <Ic d={I.plus} size={15} c={wfTokens.textMuted} />
       </button>
-      <Ic d={I.bell} size={14} />
-      <button onClick={() => navigate('settings')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-        <Ic d={I.cog} size={14} />
-      </button>
+      {!mobile && <Ic d={I.bell} size={14} />}
+      {!mobile && (
+        <button onClick={() => navigate('settings')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+          <Ic d={I.cog} size={14} />
+        </button>
+      )}
       <div
         onClick={() => navigate('settings')}
         title={user?.name}
-        style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--wf-accent)', border: `1px solid ${wfTokens.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+        style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--wf-accent)', border: `1px solid ${wfTokens.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
         <span style={{ fontSize: 9, fontWeight: 700, color: wfTokens.bg, fontFamily: '"JetBrains Mono", monospace', letterSpacing: 0 }}>{initials}</span>
       </div>
@@ -73,10 +104,11 @@ export function TopBar() {
 
 export function Sidebar() {
   const { accent } = useWF();
-  const { page, navigate, selectedProject, setSelectedProject, projects, setShowCreateProject } = useApp();
+  const { page, navigate, selectedProject, setSelectedProject, projects, setShowCreateProject, sidebarOpen, setSidebarOpen } = useApp();
   const ownProjects = projects.filter((p) => p.role === 'owner');
   const sharedProjects = projects.filter((p) => p.role !== 'owner');
   const { user, logout } = useAuth();
+  const mobile = useMobile();
   const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   const navItems = [
@@ -87,18 +119,28 @@ export function Sidebar() {
     ['teams', 'Equipos', I.users],
   ];
 
+  const handleNav = (dest) => {
+    navigate(dest);
+    if (mobile) setSidebarOpen(false);
+  };
+
+  if (mobile && !sidebarOpen) return null;
+
   return (
     <div style={{
-      width: 196, flexShrink: 0, borderRight: `1px solid ${wfTokens.borderSoft}`,
+      ...(mobile
+        ? { position: 'fixed', top: 44, left: 0, bottom: 0, zIndex: 300, width: 230, boxShadow: '4px 0 20px rgba(0,0,0,0.4)' }
+        : { width: 196, flexShrink: 0 }),
+      borderRight: `1px solid ${wfTokens.borderSoft}`,
       background: wfTokens.surfaceLo, padding: '14px 10px',
-      display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto',
     }}>
       {/* Navigation */}
       <div>
         <Mono color={wfTokens.textDim} size={9}>VISTAS</Mono>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {navItems.map(([k, label, icon]) => (
-            <button key={k} onClick={() => navigate(k)} style={{
+            <button key={k} onClick={() => handleNav(k)} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
               borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
               background: page === k ? wfTokens.surfaceHi : 'transparent',
@@ -174,7 +216,7 @@ export function Sidebar() {
 
       {/* Admin link (admins only) */}
       {user?.role === 'admin' && (
-        <button onClick={() => navigate('admin')} style={{
+        <button onClick={() => handleNav('admin')} style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
           borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
           background: page === 'admin' ? wfTokens.surfaceHi : 'transparent',
@@ -187,7 +229,7 @@ export function Sidebar() {
 
       {/* User + Settings + Logout */}
       <div style={{ borderTop: `1px solid ${wfTokens.borderSoft}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <button onClick={() => navigate('settings')} style={{
+        <button onClick={() => handleNav('settings')} style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px',
           background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
           borderRadius: 4, color: wfTokens.textMuted, fontFamily: 'inherit',

@@ -39,7 +39,7 @@ const PAGES = {
 };
 
 function AppShell() {
-  const { page, openTaskId, showCreateTask, showCreateProject, showSearch, setShowSearch, openCreateTask, loading, error } = useApp();
+  const { page, openTaskId, showCreateTask, showCreateProject, showSearch, setShowSearch, openCreateTask, loading, error, sidebarOpen, setSidebarOpen } = useApp();
   const ActivePage = PAGES[page] ?? BoardPage;
 
   React.useEffect(() => {
@@ -79,6 +79,12 @@ function AppShell() {
     <Page>
       <TopBar />
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)' }}
+          />
+        )}
         <Sidebar />
         <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <ActivePage />
