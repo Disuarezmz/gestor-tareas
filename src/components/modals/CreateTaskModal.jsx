@@ -89,12 +89,12 @@ export default function CreateTaskModal() {
   const selectCss = { ...inputCss, cursor: 'pointer' };
 
   return (
-    <div style={{
+    <div className="wf-backdrop" style={{
       position: 'fixed', inset: 0, zIndex: 200,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'rgba(0,0,0,0.65)',
     }}>
-      <div style={{
+      <div className="wf-modal" style={{
         width: 580, background: wfTokens.surface,
         border: `1px solid ${wfTokens.border}`, borderRadius: 10,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',

@@ -37,6 +37,7 @@ export default function SearchBar() {
 
   return (
     <div
+      className="wf-backdrop"
       onClick={() => setShowSearch(false)}
       style={{
         position: 'fixed', inset: 0, zIndex: 300,
@@ -46,6 +47,7 @@ export default function SearchBar() {
       }}
     >
       <div
+        className="wf-search-box"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 600, background: wfTokens.surface,

@@ -54,7 +54,7 @@ export function TopBar() {
       {!mobile && (
         <div style={{ display: 'flex', gap: 2, marginLeft: 14 }}>
           {tabs.map(([k, label]) => (
-            <button key={k} onClick={() => navigate(k)} style={{
+            <button key={k} onClick={() => navigate(k)} className="wf-tab" style={{
               padding: '6px 11px', borderRadius: 5, cursor: 'pointer',
               background: page === k ? wfTokens.surfaceHi : 'transparent',
               color: page === k ? wfTokens.text : wfTokens.textMuted,
@@ -127,20 +127,23 @@ export function Sidebar() {
   if (mobile && !sidebarOpen) return null;
 
   return (
-    <div style={{
-      ...(mobile
-        ? { position: 'fixed', top: 44, left: 0, bottom: 0, zIndex: 300, width: 230, boxShadow: '4px 0 20px rgba(0,0,0,0.4)' }
-        : { width: 196, flexShrink: 0 }),
-      borderRight: `1px solid ${wfTokens.borderSoft}`,
-      background: wfTokens.surfaceLo, padding: '14px 10px',
-      display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto',
-    }}>
+    <div
+      className={mobile ? 'wf-sidebar-mobile' : undefined}
+      style={{
+        ...(mobile
+          ? { position: 'fixed', top: 44, left: 0, bottom: 0, zIndex: 300, width: 230, boxShadow: '4px 0 20px rgba(0,0,0,0.4)' }
+          : { width: 196, flexShrink: 0 }),
+        borderRight: `1px solid ${wfTokens.borderSoft}`,
+        background: wfTokens.surfaceLo, padding: '14px 10px',
+        display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto',
+      }}
+    >
       {/* Navigation */}
       <div>
         <Mono color={wfTokens.textDim} size={9}>VISTAS</Mono>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {navItems.map(([k, label, icon]) => (
-            <button key={k} onClick={() => handleNav(k)} style={{
+            <button key={k} onClick={() => handleNav(k)} className="wf-nav-btn" style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
               borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
               background: page === k ? wfTokens.surfaceHi : 'transparent',
@@ -165,7 +168,7 @@ export function Sidebar() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
           {/* All tasks item */}
-          <button onClick={() => setSelectedProject(null)} style={{
+          <button onClick={() => setSelectedProject(null)} className="wf-nav-btn" style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px',
             borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
             background: selectedProject === null ? wfTokens.surfaceHi : 'transparent',
@@ -178,7 +181,7 @@ export function Sidebar() {
 
           {/* Own project items */}
           {ownProjects.map(({ id, name, color }) => (
-            <button key={id} onClick={() => setSelectedProject(id)} style={{
+            <button key={id} onClick={() => setSelectedProject(id)} className="wf-nav-btn" style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px',
               borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
               background: selectedProject === id ? wfTokens.surfaceHi : 'transparent',
@@ -197,7 +200,7 @@ export function Sidebar() {
                 <Mono color={wfTokens.textDim} size={9}>COMPARTIDOS</Mono>
               </div>
               {sharedProjects.map(({ id, name, color, role }) => (
-                <button key={id} onClick={() => setSelectedProject(id)} style={{
+                <button key={id} onClick={() => setSelectedProject(id)} className="wf-nav-btn" style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px',
                   borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
                   background: selectedProject === id ? wfTokens.surfaceHi : 'transparent',
@@ -216,7 +219,7 @@ export function Sidebar() {
 
       {/* Admin link (admins only) */}
       {user?.role === 'admin' && (
-        <button onClick={() => handleNav('admin')} style={{
+        <button onClick={() => handleNav('admin')} className="wf-nav-btn" style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
           borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
           background: page === 'admin' ? wfTokens.surfaceHi : 'transparent',
@@ -229,7 +232,7 @@ export function Sidebar() {
 
       {/* User + Settings + Logout */}
       <div style={{ borderTop: `1px solid ${wfTokens.borderSoft}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <button onClick={() => handleNav('settings')} style={{
+        <button onClick={() => handleNav('settings')} className="wf-nav-btn" style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px',
           background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
           borderRadius: 4, color: wfTokens.textMuted, fontFamily: 'inherit',

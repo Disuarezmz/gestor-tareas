@@ -36,9 +36,11 @@ export function Mono({ children, size = 10, color, style }) {
   );
 }
 
-export function SB({ children, dashed, hi, style, ...props }) {
+export function SB({ children, dashed, hi, style, className, ...props }) {
+  const clickable = !!props.onClick;
   return (
     <div
+      className={[clickable ? 'wf-card' : undefined, className].filter(Boolean).join(' ') || undefined}
       style={{
         border: `1px ${dashed ? 'dashed' : 'solid'} ${wfTokens.border}`,
         borderRadius: 6,

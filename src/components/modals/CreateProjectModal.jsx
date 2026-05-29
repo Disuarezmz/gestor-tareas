@@ -48,12 +48,12 @@ export default function CreateProjectModal() {
   };
 
   return (
-    <div style={{
+    <div className="wf-backdrop" style={{
       position: 'fixed', inset: 0, zIndex: 200,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'rgba(0,0,0,0.65)',
     }}>
-      <div style={{
+      <div className="wf-modal" style={{
         width: 460, background: wfTokens.surface,
         border: `1px solid ${wfTokens.border}`, borderRadius: 10,
         overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)',

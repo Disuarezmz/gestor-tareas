@@ -73,14 +73,14 @@ export default function TaskDetailPanel() {
   };
 
   return (
-    <div style={{
+    <div className="wf-backdrop" style={{
       position: 'absolute', inset: 0, zIndex: 50, display: 'flex',
     }}>
       {/* Backdrop */}
       <div onClick={() => setOpenTaskId(null)} style={{ flex: 1, background: 'rgba(0,0,0,0.35)' }} />
 
       {/* Panel */}
-      <div style={{
+      <div className="wf-panel" style={{
         width: 440, background: wfTokens.surface,
         borderLeft: `1px solid ${wfTokens.border}`,
         display: 'flex', flexDirection: 'column', flexShrink: 0,

@@ -19,3 +19,132 @@ body {
 ::selection {
   background: color-mix(in oklch, var(--wf-accent) 40%, transparent);
 }
+
+/* ============================================================
+   Keyframe Animations
+   ============================================================ */
+
+@keyframes wf-fade-in {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+@keyframes wf-scale-in {
+  from { transform: scale(0.95) translateY(-10px); opacity: 0 }
+  to   { transform: scale(1)    translateY(0);     opacity: 1 }
+}
+
+@keyframes wf-slide-right {
+  from { transform: translateX(40px); opacity: 0 }
+  to   { transform: translateX(0);    opacity: 1 }
+}
+
+@keyframes wf-slide-left-in {
+  from { transform: translateX(-100%) }
+  to   { transform: translateX(0) }
+}
+
+@keyframes wf-slide-up {
+  from { transform: translateY(8px); opacity: 0 }
+  to   { transform: translateY(0);   opacity: 1 }
+}
+
+@keyframes wf-spin {
+  to { transform: rotate(360deg) }
+}
+
+@keyframes wf-glow-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.88) }
+  50%       { opacity: 1;   transform: scale(1.08) }
+}
+
+/* ============================================================
+   Animation Classes
+   ============================================================ */
+
+/* Overlay backdrops */
+.wf-backdrop {
+  animation: wf-fade-in 0.18s ease;
+}
+
+/* Modals (centered dialogs) */
+.wf-modal {
+  animation: wf-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Side panels (slides from right) */
+.wf-panel {
+  animation: wf-slide-right 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Mobile sidebar (slides from left) */
+.wf-sidebar-mobile {
+  animation: wf-slide-left-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Page content fade on navigation */
+.wf-page-fade {
+  animation: wf-slide-up 0.22s ease;
+}
+
+/* Search palette */
+.wf-search-box {
+  animation: wf-slide-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Loading spinner ring */
+.wf-spinner {
+  animation: wf-spin 0.75s linear infinite;
+}
+
+/* Loading logo pulse */
+.wf-loading-pulse {
+  animation: wf-glow-pulse 1.3s ease-in-out infinite;
+}
+
+/* ============================================================
+   Interactive Hover & Transition Classes
+   ============================================================ */
+
+/* Sidebar / nav buttons */
+.wf-nav-btn {
+  transition: background 0.14s, color 0.14s, transform 0.1s !important;
+}
+.wf-nav-btn:hover {
+  transform: translateX(2px);
+}
+.wf-nav-btn:active {
+  transform: translateX(1px) scale(0.97);
+  opacity: 0.85;
+}
+
+/* Top-bar tab buttons */
+.wf-tab {
+  transition: background 0.12s, color 0.12s, border-color 0.12s !important;
+}
+.wf-tab:hover {
+  opacity: 0.9;
+}
+
+/* Clickable task cards */
+.wf-card {
+  transition: transform 0.13s, box-shadow 0.13s, background 0.12s !important;
+}
+.wf-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32) !important;
+}
+.wf-card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Generic buttons */
+.wf-btn {
+  transition: opacity 0.1s, transform 0.1s, background 0.12s !important;
+}
+.wf-btn:hover {
+  opacity: 0.85;
+}
+.wf-btn:active {
+  transform: scale(0.96);
+}
