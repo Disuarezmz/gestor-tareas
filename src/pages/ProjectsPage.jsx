@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { wfTokens, stateColor } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
 import { useApp } from '../contexts/AppContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useWF } from '../contexts/ThemeContext.jsx';
-import { HW, Mono, SB, Dot, Pill, Prio, Tag, StatePill, Btn, Ic, Check } from '../components/primitives/index.jsx';
+import { HW, Mono, SB, Dot, Pill, Prio, Tag, StatePill, Btn, Ic, Check, AvatarStack } from '../components/primitives/index.jsx';
 import { PageTitle } from '../components/chrome/index.jsx';
+import ShareProjectModal from '../components/modals/ShareProjectModal.jsx';
 import { formatDue } from '../utils/dates.js';
 
 const STATES = ['new', 'wait', 'exec', 'done'];
 
-function ProjectCard({ proj, projTasks, active, onClick, onDelete }) {
+function ProjectCard({ proj, projTasks, active, onClick, onDelete, isOwner }) {
   const done = projTasks.filter((t) => t.status === 'done').length;
   const total = projTasks.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
@@ -32,13 +34,18 @@ function ProjectCard({ proj, projTasks, active, onClick, onDelete }) {
         <span style={{ flex: 1, fontSize: 12, color: wfTokens.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {proj.name}
         </span>
+        {proj.role !== 'owner' && (
+          <Pill c={wfTokens.textDim} style={{ fontSize: 8 }}>{proj.role === 'editor' ? 'editor' : 'lector'}</Pill>
+        )}
         {proj.status !== 'activo' && <Pill c={wfTokens.textDim} style={{ fontSize: 8 }}>{proj.status}</Pill>}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', opacity: 0.35, borderRadius: 3 }}
-        >
-          <Ic d={I.x} size={10} c={wfTokens.textMuted} />
-        </button>
+        {isOwner && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', opacity: 0.35, borderRadius: 3 }}
+          >
+            <Ic d={I.x} size={10} c={wfTokens.textMuted} />
+          </button>
+        )}
       </div>
 
       <div>
@@ -65,7 +72,7 @@ function ProjectCard({ proj, projTasks, active, onClick, onDelete }) {
   );
 }
 
-function TaskRow({ task, onClick, onToggleDone }) {
+function TaskRow({ task, onClick, onToggleDone, canEdit }) {
   return (
     <div
       onClick={onClick}
@@ -79,7 +86,7 @@ function TaskRow({ task, onClick, onToggleDone }) {
     >
       <Check
         done={task.status === 'done'} size={12}
-        onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
+        onClick={canEdit ? (e) => { e.stopPropagation(); onToggleDone(); } : undefined}
       />
       <span style={{
         flex: 1, fontSize: 11, color: task.status === 'done' ? wfTokens.textDim : wfTokens.text,
@@ -88,6 +95,13 @@ function TaskRow({ task, onClick, onToggleDone }) {
       }}>
         {task.title}
       </span>
+      {task.assignedTo && (
+        <div style={{ width: 18, height: 18, borderRadius: 999, background: task.assignedTo.color || 'oklch(72% 0.13 210)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title={task.assignedTo.name}>
+          <span style={{ fontSize: 7, fontWeight: 700, color: '#0e0e14', fontFamily: '"JetBrains Mono", monospace' }}>
+            {task.assignedTo.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+          </span>
+        </div>
+      )}
       {task.tags.length > 0 && (
         <div style={{ display: 'flex', gap: 3 }}>
           {task.tags.slice(0, 2).map((t, i) => <Tag key={i}>{t}</Tag>)}
@@ -100,7 +114,8 @@ function TaskRow({ task, onClick, onToggleDone }) {
 }
 
 export default function ProjectsPage() {
-  const { tasks, projects, setOpenTaskId, openCreateTask, setShowCreateProject, deleteProject, updateTask, updateProject } = useApp();
+  const { tasks, projects, projectMembers, loadProjectMembers, setOpenTaskId, openCreateTask, setShowCreateProject, deleteProject, updateTask, updateProject } = useApp();
+  const { user } = useAuth();
   const { states, accent } = useWF();
 
   const [activeProjId, setActiveProjId] = useState(projects[0]?.id ?? null);
@@ -109,8 +124,12 @@ export default function ProjectsPage() {
   const nameInputRef = useRef(null);
   const [descEdit, setDescEdit] = useState('');
   const [editingDesc, setEditingDesc] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const activeProj = projects.find((p) => p.id === activeProjId);
+  const isOwner = activeProj?.role === 'owner';
+  const canEdit = activeProj?.role === 'owner' || activeProj?.role === 'editor';
+  const members = projectMembers[activeProjId] || [];
 
   useEffect(() => {
     if (activeProj) { setNameEdit(activeProj.name); setDescEdit(activeProj.desc || ''); }
@@ -121,6 +140,10 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (editingName) nameInputRef.current?.select();
   }, [editingName]);
+
+  useEffect(() => {
+    if (activeProjId && !projectMembers[activeProjId]) loadProjectMembers(activeProjId);
+  }, [activeProjId]);
 
   const saveName = () => {
     const trimmed = nameEdit.trim();
@@ -138,6 +161,7 @@ export default function ProjectsPage() {
     if (trimmed !== (activeProj.desc || '')) updateProject(activeProjId, { desc: trimmed });
     setEditingDesc(false);
   };
+
   const projTasks = activeProjId ? tasks.filter((t) => t.project === activeProjId) : [];
   const done = projTasks.filter((t) => t.status === 'done').length;
   const total = projTasks.length;
@@ -170,11 +194,16 @@ export default function ProjectsPage() {
               projTasks={tasks.filter((t) => t.project === proj.id)}
               active={proj.id === activeProjId}
               onClick={() => setActiveProjId(proj.id)}
-              onDelete={() => { if (confirm(`¿Eliminar "${proj.name}"?`)) { deleteProject(proj.id); if (activeProjId === proj.id) setActiveProjId(projects.find((p) => p.id !== proj.id)?.id ?? null); } }}
+              isOwner={proj.role === 'owner'}
+              onDelete={() => {
+                if (confirm(`¿Eliminar "${proj.name}"?`)) {
+                  deleteProject(proj.id);
+                  if (activeProjId === proj.id) setActiveProjId(projects.find((p) => p.id !== proj.id)?.id ?? null);
+                }
+              }}
             />
           ))}
 
-          {/* New project */}
           <div
             onClick={() => setShowCreateProject(true)}
             style={{
@@ -200,7 +229,7 @@ export default function ProjectsPage() {
                 <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, background: activeProj.color, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {editingName ? (
+                    {editingName && isOwner ? (
                       <input
                         ref={nameInputRef}
                         value={nameEdit}
@@ -214,17 +243,46 @@ export default function ProjectsPage() {
                         }}
                       />
                     ) : (
-                      <HW size={24} style={{ cursor: 'text' }} onClick={() => setEditingName(true)}>
+                      <HW size={24} style={{ cursor: isOwner ? 'text' : 'default' }} onClick={() => isOwner && setEditingName(true)}>
                         {activeProj.name}
                       </HW>
                     )}
+                    {activeProj.role !== 'owner' && (
+                      <Pill c={wfTokens.textDim} style={{ fontSize: 9 }}>
+                        {activeProj.role === 'editor' ? 'Editor' : 'Lector'}
+                      </Pill>
+                    )}
                     {activeProj.status !== 'activo' && <Pill c={wfTokens.textDim}>{activeProj.status}</Pill>}
                     <div style={{ flex: 1 }} />
-                    <Btn primary onClick={() => openCreateTask({ project: activeProjId })}>
-                      <Ic d={I.plus} size={10} /> Nueva tarea
-                    </Btn>
+
+                    {/* Member avatars */}
+                    {members.length > 0 && (
+                      <AvatarStack users={members} size={22} max={5} />
+                    )}
+
+                    {/* Share button */}
+                    <button
+                      onClick={() => setShowShare(true)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 5,
+                        background: 'transparent', border: `1px solid ${wfTokens.border}`, cursor: 'pointer',
+                        color: wfTokens.textMuted, fontSize: 10, fontFamily: '"JetBrains Mono", monospace',
+                      }}
+                      title="Compartir proyecto"
+                    >
+                      <Ic d={I.share} size={11} c={wfTokens.textMuted} />
+                      Compartir
+                    </button>
+
+                    {canEdit && (
+                      <Btn primary onClick={() => openCreateTask({ project: activeProjId })}>
+                        <Ic d={I.plus} size={10} /> Nueva tarea
+                      </Btn>
+                    )}
                   </div>
-                  {editingDesc ? (
+
+                  {/* Description */}
+                  {editingDesc && isOwner ? (
                     <textarea
                       autoFocus
                       value={descEdit}
@@ -242,39 +300,49 @@ export default function ProjectsPage() {
                     />
                   ) : (
                     <div
-                      onClick={() => setEditingDesc(true)}
+                      onClick={() => isOwner && setEditingDesc(true)}
                       style={{
-                        marginTop: 4, fontSize: 11, lineHeight: 1.5, cursor: 'text',
+                        marginTop: 4, fontSize: 11, lineHeight: 1.5,
+                        cursor: isOwner ? 'text' : 'default',
                         color: activeProj.desc ? wfTokens.textMuted : wfTokens.textDim,
                         minHeight: 18,
                       }}
                     >
-                      {activeProj.desc || 'Añadir descripción…'}
+                      {activeProj.desc || (isOwner ? 'Añadir descripción…' : '')}
                     </div>
                   )}
+
                   <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ flex: 1, height: 4, borderRadius: 2, background: wfTokens.border, overflow: 'hidden', maxWidth: 240 }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: activeProj.color, borderRadius: 2, transition: 'width 0.3s' }} />
                     </div>
                     <Mono size={9}>{done}/{total} completadas · {pct}%</Mono>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Ic d={I.cal} size={10} c={wfTokens.textDim} />
-                      <input
-                        type="date"
-                        value={activeProj.due === '—' ? '' : activeProj.due}
-                        onChange={(e) => saveDue(e.target.value)}
-                        style={{
-                          background: 'transparent', border: 'none', outline: 'none',
-                          color: activeProj.due && activeProj.due !== '—' ? wfTokens.textMuted : wfTokens.textDim,
-                          fontSize: 9, fontFamily: 'inherit', cursor: 'pointer',
-                          colorScheme: 'dark', width: activeProj.due && activeProj.due !== '—' ? 'auto' : 80,
-                        }}
-                        title="Fecha de vencimiento"
-                      />
-                      {activeProj.due && activeProj.due !== '—' && (
-                        <Mono size={9} style={{ color: wfTokens.textDim }}>({formatDue(activeProj.due)})</Mono>
-                      )}
-                    </div>
+                    {isOwner && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Ic d={I.cal} size={10} c={wfTokens.textDim} />
+                        <input
+                          type="date"
+                          value={activeProj.due === '—' ? '' : activeProj.due}
+                          onChange={(e) => saveDue(e.target.value)}
+                          style={{
+                            background: 'transparent', border: 'none', outline: 'none',
+                            color: activeProj.due && activeProj.due !== '—' ? wfTokens.textMuted : wfTokens.textDim,
+                            fontSize: 9, fontFamily: 'inherit', cursor: 'pointer',
+                            colorScheme: 'dark', width: activeProj.due && activeProj.due !== '—' ? 'auto' : 80,
+                          }}
+                          title="Fecha de vencimiento"
+                        />
+                        {activeProj.due && activeProj.due !== '—' && (
+                          <Mono size={9} style={{ color: wfTokens.textDim }}>({formatDue(activeProj.due)})</Mono>
+                        )}
+                      </div>
+                    )}
+                    {!isOwner && activeProj.due && activeProj.due !== '—' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Ic d={I.cal} size={10} c={wfTokens.textDim} />
+                        <Mono size={9}>{formatDue(activeProj.due)}</Mono>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -285,9 +353,11 @@ export default function ProjectsPage() {
               {projTasks.length === 0 ? (
                 <div style={{ padding: '60px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                   <Mono size={11}>Sin tareas en este proyecto</Mono>
-                  <Btn primary onClick={() => openCreateTask({ project: activeProjId })}>
-                    <Ic d={I.plus} size={10} /> Añadir tarea
-                  </Btn>
+                  {canEdit && (
+                    <Btn primary onClick={() => openCreateTask({ project: activeProjId })}>
+                      <Ic d={I.plus} size={10} /> Añadir tarea
+                    </Btn>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -301,18 +371,21 @@ export default function ProjectsPage() {
                           <Mono size={9} style={{ color: wfTokens.textMuted }}>{states[k]}</Mono>
                           <Mono size={9}>{group.length}</Mono>
                           <div style={{ flex: 1, height: 1, background: wfTokens.borderSoft, marginLeft: 4 }} />
-                          <button
-                            onClick={() => openCreateTask({ project: activeProjId, status: k })}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', borderRadius: 3 }}
-                          >
-                            <Ic d={I.plus} size={10} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => openCreateTask({ project: activeProjId, status: k })}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', borderRadius: 3 }}
+                            >
+                              <Ic d={I.plus} size={10} />
+                            </button>
+                          )}
                         </div>
                         <SB style={{ padding: 4 }}>
                           {group.map((task) => (
                             <TaskRow
                               key={task.id}
                               task={task}
+                              canEdit={canEdit}
                               onClick={() => setOpenTaskId(task.id)}
                               onToggleDone={() => updateTask(task.id, { status: task.status === 'done' ? 'new' : 'done' })}
                             />
@@ -331,6 +404,10 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {showShare && activeProjId && (
+        <ShareProjectModal projectId={activeProjId} onClose={() => setShowShare(false)} />
+      )}
     </div>
   );
 }

@@ -28,13 +28,16 @@ export function AppProvider({ children }) {
 
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [groupMembers, setGroupMembers] = useState({});
+  const [projectMembers, setProjectMembers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // ── Load on mount ───────────────────────────────────────────
   useEffect(() => {
-    Promise.all([api('/projects'), api('/tasks')])
-      .then(([projs, tsks]) => { setProjects(projs); setTasks(tsks); })
+    Promise.all([api('/projects'), api('/tasks'), api('/groups')])
+      .then(([projs, tsks, grps]) => { setProjects(projs); setTasks(tsks); setGroups(grps); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -47,9 +50,9 @@ export function AppProvider({ children }) {
   }, []);
 
   const updateTask = useCallback(async (id, changes) => {
-    // Optimistic update for instant UI feedback
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } : t)));
-    await api(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(changes) });
+    const updated = await api(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(changes) });
+    setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
   }, []);
 
   const deleteTask = useCallback(async (id) => {
@@ -76,6 +79,83 @@ export function AppProvider({ children }) {
     await api(`/projects/${id}`, { method: 'DELETE' });
   }, []);
 
+  // ── Project members ─────────────────────────────────────────
+  const loadProjectMembers = useCallback(async (projectId) => {
+    const members = await api(`/projects/${projectId}/members`);
+    setProjectMembers((prev) => ({ ...prev, [projectId]: members }));
+    return members;
+  }, []);
+
+  const addProjectMember = useCallback(async (projectId, data) => {
+    const result = await api(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify(data) });
+    await loadProjectMembers(projectId);
+    return result;
+  }, [loadProjectMembers]);
+
+  const updateProjectMember = useCallback(async (projectId, userId, role) => {
+    await api(`/projects/${projectId}/members/${userId}`, { method: 'PUT', body: JSON.stringify({ role }) });
+    setProjectMembers((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] || []).map((m) => (m.id === userId ? { ...m, role } : m)),
+    }));
+  }, []);
+
+  const removeProjectMember = useCallback(async (projectId, userId) => {
+    await api(`/projects/${projectId}/members/${userId}`, { method: 'DELETE' });
+    setProjectMembers((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] || []).filter((m) => m.id !== userId),
+    }));
+  }, []);
+
+  // ── Group actions ───────────────────────────────────────────
+  const createGroup = useCallback(async (data) => {
+    const group = await api('/groups', { method: 'POST', body: JSON.stringify(data) });
+    setGroups((prev) => [...prev, group]);
+    return group;
+  }, []);
+
+  const updateGroup = useCallback(async (id, changes) => {
+    const updated = await api(`/groups/${id}`, { method: 'PUT', body: JSON.stringify(changes) });
+    setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, ...updated } : g)));
+  }, []);
+
+  const deleteGroup = useCallback(async (id) => {
+    await api(`/groups/${id}`, { method: 'DELETE' });
+    setGroups((prev) => prev.filter((g) => g.id !== id));
+    setGroupMembers((prev) => { const next = { ...prev }; delete next[id]; return next; });
+  }, []);
+
+  const loadGroupMembers = useCallback(async (groupId) => {
+    const members = await api(`/groups/${groupId}/members`);
+    setGroupMembers((prev) => ({ ...prev, [groupId]: members }));
+    return members;
+  }, []);
+
+  const addGroupMember = useCallback(async (groupId, data) => {
+    const member = await api(`/groups/${groupId}/members`, { method: 'POST', body: JSON.stringify(data) });
+    setGroupMembers((prev) => ({
+      ...prev,
+      [groupId]: [...(prev[groupId] || []).filter((m) => m.id !== member.id), member],
+    }));
+    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, memberCount: (g.memberCount || 1) + 1 } : g)));
+    return member;
+  }, []);
+
+  const removeGroupMember = useCallback(async (groupId, userId) => {
+    await api(`/groups/${groupId}/members/${userId}`, { method: 'DELETE' });
+    setGroupMembers((prev) => ({
+      ...prev,
+      [groupId]: (prev[groupId] || []).filter((m) => m.id !== userId),
+    }));
+    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, memberCount: Math.max(0, (g.memberCount || 1) - 1) } : g)));
+  }, []);
+
+  // ── User search ─────────────────────────────────────────────
+  const searchUsers = useCallback(async (q) => {
+    return api(`/users?q=${encodeURIComponent(q)}`);
+  }, []);
+
   // ── Open create modal with defaults ────────────────────────
   const openCreateTask = useCallback((defaults = {}) => {
     setCreateTaskDefaults(defaults);
@@ -91,10 +171,15 @@ export function AppProvider({ children }) {
       showCreateProject, setShowCreateProject,
       showSearch, setShowSearch,
       createTaskDefaults, openCreateTask,
-      tasks, projects,
+      tasks, projects, groups,
+      groupMembers, projectMembers,
       loading, error,
       createTask, updateTask, deleteTask,
       createProject, updateProject, deleteProject,
+      loadProjectMembers, addProjectMember, updateProjectMember, removeProjectMember,
+      createGroup, updateGroup, deleteGroup,
+      loadGroupMembers, addGroupMember, removeGroupMember,
+      searchUsers,
     }}>
       {children}
     </AppCtx.Provider>

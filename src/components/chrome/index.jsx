@@ -3,7 +3,7 @@ import { useApp } from '../../contexts/AppContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { wfTokens, stateColor } from '../../constants/tokens.js';
 import { I } from '../../constants/icons.js';
-import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic } from '../primitives/index.jsx';
+import { HW, Mono, SB, Pill, Dot, StateDot, StatePill, Prio, Tag, Btn, Check, Ic, UserAvatar } from '../primitives/index.jsx';
 import { formatDue } from '../../utils/dates.js';
 
 export function TopBar() {
@@ -15,6 +15,7 @@ export function TopBar() {
   const tabs = [
     ['dashboard', 'Inicio'],
     ['projects', 'Proyectos'],
+    ['teams', 'Equipos'],
   ];
 
   return (
@@ -73,6 +74,8 @@ export function TopBar() {
 export function Sidebar() {
   const { accent } = useWF();
   const { page, navigate, selectedProject, setSelectedProject, projects, setShowCreateProject } = useApp();
+  const ownProjects = projects.filter((p) => p.role === 'owner');
+  const sharedProjects = projects.filter((p) => p.role !== 'owner');
   const { user, logout } = useAuth();
   const initials = user?.name?.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
@@ -81,6 +84,7 @@ export function Sidebar() {
     ['board', 'Tablero', I.grid],
     ['list', 'Lista', I.list],
     ['calendar', 'Calendario', I.cal],
+    ['teams', 'Equipos', I.users],
   ];
 
   return (
@@ -130,8 +134,8 @@ export function Sidebar() {
             <span style={{ fontSize: 11 }}>Todas las tareas</span>
           </button>
 
-          {/* Project items */}
-          {projects.map(({ id, name, color }) => (
+          {/* Own project items */}
+          {ownProjects.map(({ id, name, color }) => (
             <button key={id} onClick={() => setSelectedProject(id)} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px',
               borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
@@ -143,6 +147,28 @@ export function Sidebar() {
               <span style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
             </button>
           ))}
+
+          {/* Shared projects */}
+          {sharedProjects.length > 0 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: 10, marginBottom: 2 }}>
+                <Mono color={wfTokens.textDim} size={9}>COMPARTIDOS</Mono>
+              </div>
+              {sharedProjects.map(({ id, name, color, role }) => (
+                <button key={id} onClick={() => setSelectedProject(id)} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px',
+                  borderRadius: 4, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left',
+                  background: selectedProject === id ? wfTokens.surfaceHi : 'transparent',
+                  color: selectedProject === id ? wfTokens.text : wfTokens.textMuted,
+                  fontFamily: 'inherit',
+                }}>
+                  <Dot c={color} size={6} />
+                  <span style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{name}</span>
+                  <Ic d={role === 'editor' ? I.check : I.link} size={8} c={wfTokens.textDim} />
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
 

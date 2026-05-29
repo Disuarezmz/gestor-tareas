@@ -3,7 +3,7 @@ import { useApp } from '../contexts/AppContext.jsx';
 import { useWF } from '../contexts/ThemeContext.jsx';
 import { wfTokens, stateColor } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
-import { HW, Mono, SB, Dot, StateDot, Prio, Tag, Ic } from './primitives/index.jsx';
+import { HW, Mono, SB, Dot, StateDot, Prio, Tag, Ic, UserAvatar } from './primitives/index.jsx';
 import { formatDue } from '../utils/dates.js';
 
 const PRIORITIES = [
@@ -15,7 +15,7 @@ const PRIORITIES = [
 const STATES_ORDER = ['new', 'wait', 'exec', 'done'];
 
 export default function TaskDetailPanel() {
-  const { openTaskId, setOpenTaskId, tasks, projects, updateTask, deleteTask } = useApp();
+  const { openTaskId, setOpenTaskId, tasks, projects, updateTask, deleteTask, projectMembers, loadProjectMembers } = useApp();
   const { accent, states } = useWF();
 
   const task = tasks.find((t) => t.id === openTaskId);
@@ -30,6 +30,7 @@ export default function TaskDetailPanel() {
       setTitleEdit(task.title);
       setDescEdit(task.desc || '');
       setTagInput('');
+      if (task.project && !projectMembers[task.project]) loadProjectMembers(task.project);
     }
   }, [task?.id]);
 
@@ -42,6 +43,7 @@ export default function TaskDetailPanel() {
   if (!task) return null;
 
   const proj = projects.find((p) => p.id === task.project);
+  const members = task.project ? (projectMembers[task.project] || []) : [];
   const change = (key, value) => updateTask(task.id, { [key]: value });
 
   const saveTitle = () => {
@@ -193,6 +195,25 @@ export default function TaskDetailPanel() {
                 />
               </div>
             </MetaRow>
+
+            {/* Assigned to — only shown when project has members */}
+            {members.length > 0 && (
+              <MetaRow label="Asignado a">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {task.assignedTo && <UserAvatar user={{ name: task.assignedTo.name, avatarColor: task.assignedTo.color }} size={18} />}
+                  <select
+                    value={task.assignedTo?.id || ''}
+                    onChange={(e) => change('assignedTo', e.target.value ? parseInt(e.target.value) : null)}
+                    style={{ ...inputCss, cursor: 'pointer', color: task.assignedTo ? wfTokens.text : wfTokens.textDim }}
+                  >
+                    <option value="">Sin asignar</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </MetaRow>
+            )}
           </div>
 
           {/* Description */}

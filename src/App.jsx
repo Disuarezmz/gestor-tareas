@@ -17,6 +17,7 @@ import BoardPage from './pages/BoardPage.jsx';
 import ListView from './pages/ListView.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
+import GroupsPage from './pages/GroupsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 
@@ -32,6 +33,7 @@ const PAGES = {
   list: ListView,
   calendar: CalendarPage,
   projects: ProjectsPage,
+  teams: GroupsPage,
   settings: SettingsPage,
   admin: AdminPage,
 };

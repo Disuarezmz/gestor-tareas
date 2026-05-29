@@ -234,6 +234,47 @@ export function Check({ done, size = 10, onClick, style }) {
   );
 }
 
+export function UserAvatar({ user, size = 22, style }) {
+  const initials = (user?.name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <div
+      title={user?.name}
+      style={{
+        width: size, height: size, borderRadius: 999, flexShrink: 0,
+        background: user?.avatarColor || user?.color || 'oklch(72% 0.13 210)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '1.5px solid rgba(0,0,0,0.25)',
+        ...style,
+      }}
+    >
+      <span style={{ fontSize: size * 0.36, fontWeight: 700, color: '#0e0e14', fontFamily: '"JetBrains Mono", monospace', lineHeight: 1 }}>
+        {initials}
+      </span>
+    </div>
+  );
+}
+
+export function AvatarStack({ users = [], size = 20, max = 4 }) {
+  const visible = users.slice(0, max);
+  const overflow = users.length - max;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {visible.map((u, i) => (
+        <UserAvatar key={u.id} user={u} size={size} style={{ marginLeft: i === 0 ? 0 : -size * 0.35, zIndex: visible.length - i, boxSizing: 'border-box' }} />
+      ))}
+      {overflow > 0 && (
+        <div style={{
+          width: size, height: size, borderRadius: 999, flexShrink: 0, marginLeft: -size * 0.35,
+          background: '#2a2a3a', border: '1.5px solid rgba(0,0,0,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: size * 0.32, color: '#aaa', fontFamily: '"JetBrains Mono", monospace' }}>+{overflow}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Ic({ d, size = 12, c, style }) {
   return (
     <svg

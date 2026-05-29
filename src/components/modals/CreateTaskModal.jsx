@@ -22,7 +22,7 @@ function Field({ label, children }) {
 }
 
 export default function CreateTaskModal() {
-  const { setShowCreateTask, createTask, projects, createTaskDefaults, setOpenTaskId } = useApp();
+  const { setShowCreateTask, createTask, projects, createTaskDefaults, setOpenTaskId, projectMembers, loadProjectMembers } = useApp();
   const { accent, states } = useWF();
 
   const [form, setForm] = useState({
@@ -34,7 +34,15 @@ export default function CreateTaskModal() {
     due: createTaskDefaults.due || todayISO(),
     tagInput: '',
     tags: [],
+    assignedTo: '',
   });
+
+  const editableProjects = projects.filter((p) => p.role === 'owner' || p.role === 'editor');
+  const selectedProjectMembers = form.project ? (projectMembers[form.project] || []) : [];
+
+  useEffect(() => {
+    if (form.project && !projectMembers[form.project]) loadProjectMembers(form.project);
+  }, [form.project]);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -63,6 +71,7 @@ export default function CreateTaskModal() {
       project: form.project || null,
       due: form.due || '—',
       tags: form.tags,
+      assignedTo: form.assignedTo ? parseInt(form.assignedTo) : null,
     });
     setShowCreateTask(false);
     setOpenTaskId(task.id);
@@ -152,9 +161,9 @@ export default function CreateTaskModal() {
               </Field>
 
               <Field label="PROYECTO">
-                <select value={form.project} onChange={(e) => set('project', e.target.value)} style={selectCss}>
+                <select value={form.project} onChange={(e) => { set('project', e.target.value); set('assignedTo', ''); }} style={selectCss}>
                   <option value="">Sin proyecto</option>
-                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {editableProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </Field>
 
@@ -167,6 +176,16 @@ export default function CreateTaskModal() {
                 />
               </Field>
             </div>
+
+            {/* Assigned to */}
+            {selectedProjectMembers.length > 0 && (
+              <Field label="ASIGNAR A">
+                <select value={form.assignedTo} onChange={(e) => set('assignedTo', e.target.value)} style={selectCss}>
+                  <option value="">Sin asignar</option>
+                  {selectedProjectMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </Field>
+            )}
 
             {/* Tags */}
             <Field label="ETIQUETAS">
