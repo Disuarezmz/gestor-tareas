@@ -150,7 +150,7 @@ function ResumenTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
         <StatCard label="Usuarios totales" value={stats.totalUsers} sub={`${stats.admins} admin · ${stats.totalUsers - stats.admins} usuarios`} />
         <StatCard label="Nuevos esta semana" value={stats.newWeek} color="var(--wf-accent)" />
         <StatCard label="Suspendidos" value={stats.suspended} color={stats.suspended > 0 ? wfTokens.hueHigh : wfTokens.textDim} />
@@ -191,6 +191,7 @@ function UsuariosTab() {
   const [rowErr, setRowErr] = useState({});
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editUser, setEditUser] = useState(null);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -229,6 +230,14 @@ function UsuariosTab() {
     } catch (e) { setRowError(u.id, e.message); }
   };
 
+  const saveEdit = async (u, changes) => {
+    try {
+      const updated = await adminApi(`/users/${u.id}`, { method: 'PUT', body: JSON.stringify(changes) });
+      setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, ...updated } : x));
+      setEditUser(null);
+    } catch (e) { throw e; }
+  };
+
   const filtered = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()),
@@ -257,101 +266,117 @@ function UsuariosTab() {
       {err && <ErrMsg text={err} />}
 
       <SB style={{ overflow: 'hidden' }}>
-        {/* Table header */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '2fr 2fr 80px 90px 60px 60px 90px 110px',
-          padding: '6px 14px', borderBottom: `1px solid ${wfTokens.border}`,
-          background: wfTokens.surfaceLo,
-        }}>
-          {['Usuario', 'Email', 'Rol', 'Estado', 'Tareas', 'Proyt.', 'Registrado', 'Acciones'].map((h) => (
-            <Mono key={h} size={8}>{h.toUpperCase()}</Mono>
-          ))}
-        </div>
+        <div style={{ overflowX: 'auto' }}>
+          {/* Table header */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '180px 180px 80px 90px 55px 55px 90px 160px',
+            minWidth: 900, padding: '6px 14px', borderBottom: `1px solid ${wfTokens.border}`,
+            background: wfTokens.surfaceLo,
+          }}>
+            {['Usuario', 'Email', 'Rol', 'Estado', 'Tareas', 'Proyt.', 'Registrado', 'Acciones'].map((h) => (
+              <Mono key={h} size={8}>{h.toUpperCase()}</Mono>
+            ))}
+          </div>
 
-        {filtered.length === 0 && (
-          <div style={{ padding: 20 }}><Mono>Sin resultados</Mono></div>
-        )}
+          {filtered.length === 0 && (
+            <div style={{ padding: 20 }}><Mono>Sin resultados</Mono></div>
+          )}
 
-        {filtered.map((u) => {
-          const isSelf = u.id === me.id;
-          return (
-            <div key={u.id} style={{ borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
-              <div style={{
-                display: 'grid', gridTemplateColumns: '2fr 2fr 80px 90px 60px 60px 90px 110px',
-                padding: '10px 14px', alignItems: 'center',
-                background: isSelf ? `color-mix(in oklch, var(--wf-accent) 5%, transparent)` : 'transparent',
-              }}>
-                {/* Usuario */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <Avatar name={u.name} color={u.avatarColor} size={26} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: wfTokens.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {u.name} {isSelf && <Mono size={8}>(tú)</Mono>}
+          {filtered.map((u) => {
+            const isSelf = u.id === me.id;
+            return (
+              <div key={u.id} style={{ borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '180px 180px 80px 90px 55px 55px 90px 160px',
+                  minWidth: 900, padding: '10px 14px', alignItems: 'center',
+                  background: isSelf ? `color-mix(in oklch, var(--wf-accent) 5%, transparent)` : 'transparent',
+                }}>
+                  {/* Usuario */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <Avatar name={u.name} color={u.avatarColor} size={26} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: wfTokens.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {u.name} {isSelf && <Mono size={8}>(tú)</Mono>}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Email */}
+                  <Mono style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>
+                    {u.email}
+                  </Mono>
+
+                  {/* Rol */}
+                  <div><RoleBadge role={u.role} /></div>
+
+                  {/* Estado */}
+                  <div><StatusBadge isActive={u.isActive} /></div>
+
+                  {/* Tareas */}
+                  <Mono>{u.taskCount}</Mono>
+
+                  {/* Proyectos */}
+                  <Mono>{u.projectCount}</Mono>
+
+                  {/* Registrado */}
+                  <Mono>{fmtDateShort(u.createdAt)}</Mono>
+
+                  {/* Acciones */}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <ActionBtn
+                      icon="pen"
+                      label="Editar"
+                      onClick={() => setEditUser(u)}
+                      title="Editar información del usuario"
+                    />
+                    <ActionBtn
+                      icon={u.role === 'admin' ? 'user' : 'shield'}
+                      label={u.role === 'admin' ? 'Quitar admin' : 'Admin'}
+                      onClick={() => toggleRole(u)}
+                      disabled={isSelf}
+                      title={isSelf ? 'No puedes cambiar tu propio rol' : undefined}
+                    />
+                    <ActionBtn
+                      icon={u.isActive ? 'ban' : 'check'}
+                      label={u.isActive ? 'Suspender' : 'Activar'}
+                      onClick={() => toggleActive(u)}
+                      disabled={isSelf}
+                      danger={u.isActive}
+                      title={isSelf ? 'No puedes suspender tu propia cuenta' : undefined}
+                    />
+                    <ActionBtn
+                      icon="x"
+                      label="Eliminar"
+                      onClick={() => deleteUser(u)}
+                      disabled={isSelf}
+                      danger
+                      title={isSelf ? 'Usa Configuración para eliminar tu cuenta' : undefined}
+                    />
+                  </div>
                 </div>
-
-                {/* Email */}
-                <Mono style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>
-                  {u.email}
-                </Mono>
-
-                {/* Rol */}
-                <div><RoleBadge role={u.role} /></div>
-
-                {/* Estado */}
-                <div><StatusBadge isActive={u.isActive} /></div>
-
-                {/* Tareas */}
-                <Mono>{u.taskCount}</Mono>
-
-                {/* Proyectos */}
-                <Mono>{u.projectCount}</Mono>
-
-                {/* Registrado */}
-                <Mono>{fmtDateShort(u.createdAt)}</Mono>
-
-                {/* Acciones */}
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <ActionBtn
-                    icon={u.role === 'admin' ? 'user' : 'shield'}
-                    label={u.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
-                    onClick={() => toggleRole(u)}
-                    disabled={isSelf}
-                    title={isSelf ? 'No puedes cambiar tu propio rol' : undefined}
-                  />
-                  <ActionBtn
-                    icon={u.isActive ? 'ban' : 'check'}
-                    label={u.isActive ? 'Suspender' : 'Activar'}
-                    onClick={() => toggleActive(u)}
-                    disabled={isSelf}
-                    danger={u.isActive}
-                    title={isSelf ? 'No puedes suspender tu propia cuenta' : undefined}
-                  />
-                  <ActionBtn
-                    icon="x"
-                    label="Eliminar"
-                    onClick={() => deleteUser(u)}
-                    disabled={isSelf}
-                    danger
-                    title={isSelf ? 'Usa Configuración para eliminar tu cuenta' : undefined}
-                  />
-                </div>
+                {rowErr[u.id] && (
+                  <div style={{ padding: '0 14px 8px' }}>
+                    <ErrMsg text={rowErr[u.id]} />
+                  </div>
+                )}
               </div>
-              {rowErr[u.id] && (
-                <div style={{ padding: '0 14px 8px' }}>
-                  <ErrMsg text={rowErr[u.id]} />
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </SB>
 
       {showCreate && (
         <CreateUserModal
           onClose={() => setShowCreate(false)}
           onCreated={(u) => { setUsers((prev) => [...prev, u]); setShowCreate(false); }}
+        />
+      )}
+
+      {editUser && (
+        <EditUserModal
+          user={editUser}
+          onClose={() => setEditUser(null)}
+          onSaved={(changes) => saveEdit(editUser, changes)}
         />
       )}
     </div>
@@ -441,6 +466,101 @@ function CreateUserModal({ onClose, onCreated }) {
               }}
             >
               {saving ? '…' : 'Crear usuario'}
+            </button>
+            <button
+              type="button" onClick={onClose}
+              style={{
+                padding: '8px 16px', borderRadius: 5, cursor: 'pointer', border: `1px solid ${wfTokens.border}`,
+                background: 'transparent', color: wfTokens.textMuted, fontSize: 11, fontFamily: 'inherit',
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit User Modal ───────────────────────────────────────────
+
+function EditUserModal({ user: u, onClose, onSaved }) {
+  const [name, setName] = useState(u.name);
+  const [email, setEmail] = useState(u.email);
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr('');
+    const changes = {};
+    if (name.trim() && name.trim() !== u.name) changes.name = name.trim();
+    if (email && email !== u.email) changes.email = email;
+    if (password) {
+      if (password.length < 6) { setErr('La contraseña debe tener al menos 6 caracteres'); return; }
+      changes.password = password;
+    }
+    if (!Object.keys(changes).length) { onClose(); return; }
+    setSaving(true);
+    try {
+      await onSaved(changes);
+    } catch (ex) {
+      setErr(ex.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: 400, background: wfTokens.surface, border: `1px solid ${wfTokens.border}`, borderRadius: 10, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar name={u.name} color={u.avatarColor} size={30} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: wfTokens.text }}>Editar usuario</div>
+              <Mono size={9}>{u.email}</Mono>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+            <Ic d={I.x} size={14} c={wfTokens.textMuted} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <FieldRow label="Nombre">
+            <TextInput value={name} onChange={setName} placeholder="Nombre completo" />
+          </FieldRow>
+          <FieldRow label="Email">
+            <TextInput value={email} onChange={setEmail} placeholder="correo@empresa.com" type="email" />
+          </FieldRow>
+          <FieldRow label="Nueva contraseña (opcional)">
+            <TextInput value={password} onChange={setPassword} placeholder="Dejar vacío para no cambiar" type="password" />
+          </FieldRow>
+
+          {err && <ErrMsg text={err} />}
+
+          <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+            <button
+              type="submit" disabled={saving}
+              style={{
+                flex: 1, padding: '8px', borderRadius: 5, border: 'none', cursor: saving ? 'wait' : 'pointer',
+                background: 'var(--wf-accent)', color: wfTokens.bg, fontWeight: 600, fontSize: 11, fontFamily: 'inherit',
+                opacity: saving ? 0.65 : 1,
+              }}
+            >
+              {saving ? '…' : 'Guardar cambios'}
             </button>
             <button
               type="button" onClick={onClose}

@@ -94,7 +94,7 @@ router.put('/users/:id', requireAdmin, wrap(async (req, res) => {
   if (targetId === actorId && ('role' in req.body || 'isActive' in req.body))
     return res.status(400).json({ error: 'No puedes cambiar tu propio rol o estado desde el panel de admin' });
 
-  const { name, email, role, isActive } = req.body;
+  const { name, email, role, isActive, password } = req.body;
   const sets = [], vals = [];
   let i = 1;
 
@@ -106,6 +106,12 @@ router.put('/users/:id', requireAdmin, wrap(async (req, res) => {
     sets.push(`role=$${i++}`); vals.push(role);
   }
   if (isActive !== undefined) { sets.push(`is_active=$${i++}`); vals.push(Boolean(isActive)); }
+  if (password) {
+    if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const hash = await bcrypt.hash(password, 10);
+    sets.push(`password_hash=$${i++}`); vals.push(hash);
+    sets.push(`must_change_password=$${i++}`); vals.push(false);
+  }
 
   if (!sets.length) return res.status(400).json({ error: 'Sin cambios' });
 
