@@ -21,6 +21,8 @@ if [ -f "$PGPARENT/PG_VERSION" ] && [ ! -f "$PGDATA/PG_VERSION" ]; then
     mkdir -p "$PGDATA"
     for f in "$PGPARENT"/*; do
         [ "$f" = "$PGDATA" ] && continue
+        # Skip paths that are Docker mount points (cannot be renamed)
+        mountpoint -q "$f" 2>/dev/null && continue
         mv "$f" "$PGDATA/"
     done
     echo "    Reorganizacion completada."
@@ -67,16 +69,17 @@ if [ -f "$PGDATA/PG_VERSION" ]; then
             -D "$NEW_DATA"
         rm -f "$PWFILE"
 
-        echo "[2/3] Ejecutando pg_upgrade --link ..."
-        echo "      (los ficheros se enlazan en lugar de copiarse: mas rapido, mismo uso de disco)"
+        echo "[2/3] Ejecutando pg_upgrade ..."
         # pg_upgrade escribe logs en el directorio actual; usar PGPARENT (en el volumen)
         cd "$PGPARENT"
         gosu postgres pg_upgrade \
             --old-bindir="$OLD_BINDIR" \
             --new-bindir="$NEW_BINDIR" \
             --old-datadir="$PGDATA" \
-            --new-datadir="$NEW_DATA" \
-            --link
+            --new-datadir="$NEW_DATA"
+
+        # Allow connections from any host (Docker networks) in the new cluster
+        echo "host all all all trust" >> "$NEW_DATA/pg_hba.conf"
 
         echo "[3/3] Rotando directorios ..."
         mv "$PGDATA"   "$BACKUP_DATA"

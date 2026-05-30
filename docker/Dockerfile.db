@@ -5,9 +5,10 @@ FROM postgres:16-alpine AS pg16
 FROM postgres:17-alpine
 
 # Copy pg16 server binaries and libraries to an isolated path
-COPY --from=pg16 /usr/local/bin/postgres       /usr/local/pg16/bin/postgres
-COPY --from=pg16 /usr/local/bin/pg_ctl         /usr/local/pg16/bin/pg_ctl
-COPY --from=pg16 /usr/local/bin/pg_resetwal    /usr/local/pg16/bin/pg_resetwal
+COPY --from=pg16 /usr/local/bin/postgres        /usr/local/pg16/bin/postgres
+COPY --from=pg16 /usr/local/bin/pg_ctl          /usr/local/pg16/bin/pg_ctl
+COPY --from=pg16 /usr/local/bin/pg_controldata  /usr/local/pg16/bin/pg_controldata
+COPY --from=pg16 /usr/local/bin/pg_resetwal     /usr/local/pg16/bin/pg_resetwal
 COPY --from=pg16 /usr/local/lib/postgresql/    /usr/local/pg16/lib/postgresql/
 COPY --from=pg16 /usr/local/share/postgresql/  /usr/local/pg16/share/postgresql/
 

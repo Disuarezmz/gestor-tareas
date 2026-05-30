@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   project_id  INTEGER     REFERENCES projects(id) ON DELETE SET NULL,
   due         TEXT        NOT NULL DEFAULT '—',
   tags        TEXT[]      NOT NULL DEFAULT '{}',
-  subtasks    INTEGER[],
-  comments    INTEGER     NOT NULL DEFAULT 0,
+  subtasks    JSONB,
+  comments    JSONB       NOT NULL DEFAULT '[]'::jsonb,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -7,10 +7,10 @@ services:
       POSTGRES_DB: gestor_tareas
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      # PGDATA must stay at /data subdir so the parent dir has room for
-      # migration staging (data_new_pg17/) and backup (data_pg16_backup/).
-      # All three dirs land on the same volume → pg_upgrade --link works.
-      PGDATA: /var/lib/postgresql/data
+      # PGDATA uses /pgdata (not /data) to avoid Docker's implicit double-mount
+      # of the named volume at both /var/lib/postgresql and /var/lib/postgresql/data
+      # (caused by VOLUME /var/lib/postgresql/data in the postgres base image).
+      PGDATA: /var/lib/postgresql/pgdata
     volumes:
       # Mount at PARENT of PGDATA so migration dirs share the same filesystem
       - pgdata:/var/lib/postgresql

@@ -32,6 +32,7 @@ const migrations = [
   `INSERT INTO project_members (project_id, user_id, role)
    SELECT id, user_id, 'owner' FROM projects
    ON CONFLICT (project_id, user_id) DO NOTHING`,
+  // PostgreSQL no permite subqueries en USING; se usa columna temporal.
   `DO $$
    DECLARE col_type text;
    BEGIN
@@ -39,7 +40,8 @@ const migrations = [
      FROM pg_catalog.pg_attribute
      WHERE attrelid = 'tasks'::regclass AND attname = 'subtasks' AND attnum > 0;
      IF col_type = 'integer[]' THEN
-       ALTER TABLE tasks ALTER COLUMN subtasks TYPE JSONB USING (
+       ALTER TABLE tasks ADD COLUMN subtasks_jsonb JSONB;
+       UPDATE tasks SET subtasks_jsonb = (
          CASE
            WHEN subtasks IS NULL OR cardinality(subtasks) < 2 OR subtasks[2] <= 0 THEN NULL
            ELSE (
@@ -52,6 +54,8 @@ const migrations = [
            )
          END
        );
+       ALTER TABLE tasks DROP COLUMN subtasks;
+       ALTER TABLE tasks RENAME COLUMN subtasks_jsonb TO subtasks;
      END IF;
    END $$`,
   `DO $$
