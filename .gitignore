@@ -23,3 +23,6 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+
+# DB backups — kept on host, not in repo
+db-backups/*.sql.gz

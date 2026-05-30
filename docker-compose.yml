@@ -15,8 +15,14 @@ services:
       # Mount at PARENT of PGDATA so migration dirs share the same filesystem
       - pgdata:/var/lib/postgresql
       - ./server/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      # zz-restore.sh runs after schema.sql on fresh init and restores latest backup
+      - ./docker/zz-restore.sh:/docker-entrypoint-initdb.d/zz-restore.sh
+      # Bind mount (not a volume) so backups survive docker compose down -v
+      - ./db-backups:/backups
     ports:
       - "5433:5432"
+    # Extra time on stop so the backup pg_dump can finish before SIGKILL
+    stop_grace_period: 60s
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
