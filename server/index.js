@@ -52,7 +52,9 @@ function toTask(r) {
     id: r.id, title: r.title, desc: r.description,
     status: r.status, priority: r.priority,
     project: r.project_id,
-    due: r.due, tags: r.tags ?? [], subtasks: r.subtasks ?? null, comments: r.comments,
+    due: r.due, tags: r.tags ?? [],
+    subtasks: Array.isArray(r.subtasks) ? r.subtasks : null,
+    comments: Array.isArray(r.comments) ? r.comments : [],
     assignedTo: r.assigned_to ? { id: r.assigned_to, name: r.au_name, color: r.au_color } : null,
   };
 }
@@ -255,7 +257,7 @@ app.get('/api/tasks', requireAuth, wrap(async (req, res) => {
 app.post('/api/tasks', requireAuth, wrap(async (req, res) => {
   const {
     title, desc = '', status = 'new', priority = 'med',
-    project = null, due = '—', tags = [], subtasks = null, comments = 0,
+    project = null, due = '—', tags = [], subtasks = null, comments = [],
     assignedTo = null,
   } = req.body;
 
@@ -268,7 +270,10 @@ app.post('/api/tasks', requireAuth, wrap(async (req, res) => {
   const { rows } = await pool.query(
     `INSERT INTO tasks (user_id,title,description,status,priority,project_id,due,tags,subtasks,comments,assigned_to)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-    [req.userId, title, desc, status, priority, project || null, due, tags, subtasks, comments, assignedTo || null],
+    [req.userId, title, desc, status, priority, project || null, due, tags,
+     subtasks !== null ? JSON.stringify(subtasks) : null,
+     JSON.stringify(Array.isArray(comments) ? comments : []),
+     assignedTo || null],
   );
   const task = await fetchTask(rows[0].id);
   res.status(201).json(task);
@@ -283,6 +288,8 @@ app.put('/api/tasks/:id', requireAuth, wrap(async (req, res) => {
   const body = { ...req.body };
   if ('project' in body) body.project = body.project || null;
   if ('assignedTo' in body) body.assignedTo = body.assignedTo || null;
+  if ('subtasks' in body && body.subtasks !== null) body.subtasks = JSON.stringify(body.subtasks);
+  if ('comments' in body && Array.isArray(body.comments)) body.comments = JSON.stringify(body.comments);
   const { sets, vals } = buildUpdate(MAP, body);
   if (!sets.length) return res.status(400).json({ error: 'No fields' });
   vals.push(req.userId, req.params.id);

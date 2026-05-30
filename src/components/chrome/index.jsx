@@ -282,12 +282,12 @@ export function TaskCard({ title, prio, due, tags = [], subs, comments, state, d
         <div style={{ flex: 1, fontSize: dense ? 10 : 11, color: wfTokens.text, lineHeight: 1.3 }}>{title}</div>
         {prio && <Prio level={prio} />}
       </div>
-      {subs && (
+      {Array.isArray(subs) && subs.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <Ic d={I.check} size={10} />
-          <Mono>{subs[0]}/{subs[1]}</Mono>
+          <Mono>{subs.filter((s) => s.done).length}/{subs.length}</Mono>
           <div style={{ flex: 1, height: 3, borderRadius: 2, background: wfTokens.border, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${(subs[0] / subs[1]) * 100}%`, background: accent, transition: 'width 0.2s' }} />
+            <div style={{ height: '100%', width: `${(subs.filter((s) => s.done).length / subs.length) * 100}%`, background: accent, transition: 'width 0.2s' }} />
           </div>
         </div>
       )}
@@ -299,7 +299,7 @@ export function TaskCard({ title, prio, due, tags = [], subs, comments, state, d
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
         {due && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textMuted, fontSize: 9 }}><Ic d={I.cal} size={10} /> {formatDue(due)}</span>}
         <div style={{ flex: 1 }} />
-        {comments != null && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textDim, fontSize: 9 }}><Ic d={I.comment} size={10} /> {comments}</span>}
+        {Array.isArray(comments) && comments.length > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: wfTokens.textDim, fontSize: 9 }}><Ic d={I.comment} size={10} /> {comments.length}</span>}
       </div>
     </SB>
   );

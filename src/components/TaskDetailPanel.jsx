@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useWF } from '../contexts/ThemeContext.jsx';
 import { wfTokens, stateColor } from '../constants/tokens.js';
 import { I } from '../constants/icons.js';
@@ -14,8 +15,17 @@ const PRIORITIES = [
 
 const STATES_ORDER = ['new', 'wait', 'exec', 'done'];
 
+function formatAgo(iso) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'ahora';
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
+  return `hace ${Math.floor(diff / 86400)}d`;
+}
+
 export default function TaskDetailPanel() {
   const { openTaskId, setOpenTaskId, tasks, projects, updateTask, deleteTask, projectMembers, loadProjectMembers } = useApp();
+  const { user } = useAuth();
   const { accent, states } = useWF();
 
   const task = tasks.find((t) => t.id === openTaskId);
@@ -23,13 +33,21 @@ export default function TaskDetailPanel() {
   const [titleEdit, setTitleEdit] = useState('');
   const [descEdit, setDescEdit] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [addingSubtask, setAddingSubtask] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
+  const [commentText, setCommentText] = useState('');
 
-  // Reset local edits when the task changes
   useEffect(() => {
     if (task) {
       setTitleEdit(task.title);
       setDescEdit(task.desc || '');
       setTagInput('');
+      setAddingSubtask(false);
+      setNewSubtaskTitle('');
+      setEditingSubtaskId(null);
+      setCommentText('');
       if (task.project && !projectMembers[task.project]) loadProjectMembers(task.project);
     }
   }, [task?.id]);
@@ -59,18 +77,72 @@ export default function TaskDetailPanel() {
 
   const removeTag = (tag) => change('tags', task.tags.filter((t) => t !== tag));
 
-  const toggleSubtask = (i) => {
-    if (!task.subtasks) return;
-    const [done, total] = task.subtasks;
-    // Toggle: if i < done, we uncheck (done-1), else check (done+1), clamped
-    const newDone = i < done ? Math.max(0, done - 1) : Math.min(total, done + 1);
-    change('subtasks', [newDone, total]);
+  // ── Subtask helpers ──────────────────────────────────────────
+  const subtasks = task.subtasks || [];
+  const subtasksDone = subtasks.filter((s) => s.done).length;
+
+  const toggleSubtask = (id) => {
+    change('subtasks', subtasks.map((s) => s.id === id ? { ...s, done: !s.done } : s));
+  };
+
+  const deleteSubtask = (id) => {
+    const updated = subtasks.filter((s) => s.id !== id);
+    change('subtasks', updated.length ? updated : null);
+  };
+
+  const addSubtask = (close = false) => {
+    const title = newSubtaskTitle.trim();
+    if (!title) { if (close) setAddingSubtask(false); return; }
+    change('subtasks', [...subtasks, { id: Date.now(), title, done: false }]);
+    setNewSubtaskTitle('');
+    if (close) setAddingSubtask(false);
+  };
+
+  const saveSubtaskTitle = (id) => {
+    const title = editingSubtaskTitle.trim();
+    if (title) change('subtasks', subtasks.map((s) => s.id === id ? { ...s, title } : s));
+    setEditingSubtaskId(null);
+  };
+
+  // ── Comment helpers ──────────────────────────────────────────
+  const comments = task.comments || [];
+
+  const addComment = () => {
+    const text = commentText.trim();
+    if (!text) return;
+    const comment = {
+      id: Date.now(),
+      authorName: user?.name || 'Tú',
+      authorColor: user?.avatarColor || wfTokens.surfaceHi,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    change('comments', [...comments, comment]);
+    setCommentText('');
   };
 
   const inputCss = {
     background: 'transparent', border: 'none', outline: 'none',
     color: wfTokens.text, fontFamily: 'inherit', fontSize: 11, width: '100%',
   };
+
+  const subtaskInputArea = (close) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+      <div style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${wfTokens.border}`, flexShrink: 0 }} />
+      <input
+        autoFocus
+        value={newSubtaskTitle}
+        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); addSubtask(false); }
+          if (e.key === 'Escape') { setAddingSubtask(false); setNewSubtaskTitle(''); }
+        }}
+        onBlur={() => addSubtask(true)}
+        placeholder="Nombre de la subtarea..."
+        style={{ ...inputCss, flex: 1, fontSize: 11 }}
+      />
+    </div>
+  );
 
   return (
     <div className="wf-backdrop" style={{
@@ -196,7 +268,7 @@ export default function TaskDetailPanel() {
               </div>
             </MetaRow>
 
-            {/* Assigned to — only shown when project has members */}
+            {/* Assigned to */}
             {members.length > 0 && (
               <MetaRow label="Asignado a">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -234,58 +306,99 @@ export default function TaskDetailPanel() {
             />
           </div>
 
-          {/* Subtasks */}
-          {task.subtasks && (
+          {/* Subtasks — section exists */}
+          {task.subtasks !== null && (
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Mono size={9}>SUBTAREAS</Mono>
-                <Mono>{task.subtasks[0]}/{task.subtasks[1]}</Mono>
-                <div style={{ flex: 1, height: 3, borderRadius: 2, background: wfTokens.border, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(task.subtasks[0] / task.subtasks[1]) * 100}%`, background: accent, borderRadius: 2, transition: 'width 0.2s' }} />
-                </div>
-              </div>
-              {Array.from({ length: task.subtasks[1] }).map((_, i) => {
-                const done = i < task.subtasks[0];
-                return (
-                  <div key={i} onClick={() => toggleSubtask(i)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: `1px solid ${wfTokens.borderSoft}`, cursor: 'pointer' }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${done ? accent : wfTokens.border}`, background: done ? `color-mix(in oklch, ${accent} 22%, transparent)` : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {done && <span style={{ color: accent, fontSize: 10 }}>✓</span>}
+                {subtasks.length > 0 && (
+                  <>
+                    <Mono>{subtasksDone}/{subtasks.length}</Mono>
+                    <div style={{ flex: 1, height: 3, borderRadius: 2, background: wfTokens.border, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(subtasksDone / subtasks.length) * 100}%`, background: accent, borderRadius: 2, transition: 'width 0.2s' }} />
                     </div>
-                    <span style={{ fontSize: 11, color: done ? wfTokens.textDim : wfTokens.text, textDecoration: done ? 'line-through' : 'none' }}>
-                      Subtarea {i + 1}
-                    </span>
+                  </>
+                )}
+              </div>
+
+              {subtasks.map((sub) => (
+                <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
+                  <div
+                    onClick={() => toggleSubtask(sub.id)}
+                    style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${sub.done ? accent : wfTokens.border}`, background: sub.done ? `color-mix(in oklch, ${accent} 22%, transparent)` : 'transparent' }}
+                  >
+                    {sub.done && <span style={{ color: accent, fontSize: 10 }}>✓</span>}
                   </div>
-                );
-              })}
-              <button onClick={() => change('subtasks', [task.subtasks[0], task.subtasks[1] + 1])} style={{ marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', color: wfTokens.textDim, fontSize: 10, fontFamily: '"JetBrains Mono", monospace', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Ic d={I.plus} size={9} /> añadir subtarea
-              </button>
+
+                  {editingSubtaskId === sub.id ? (
+                    <input
+                      autoFocus
+                      value={editingSubtaskTitle}
+                      onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                      onBlur={() => saveSubtaskTitle(sub.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveSubtaskTitle(sub.id);
+                        if (e.key === 'Escape') setEditingSubtaskId(null);
+                      }}
+                      style={{ ...inputCss, flex: 1, fontSize: 11, textDecoration: sub.done ? 'line-through' : 'none' }}
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={() => { setEditingSubtaskId(sub.id); setEditingSubtaskTitle(sub.title); }}
+                      style={{ flex: 1, fontSize: 11, color: sub.done ? wfTokens.textDim : wfTokens.text, textDecoration: sub.done ? 'line-through' : 'none', cursor: 'text' }}
+                    >
+                      {sub.title}
+                    </span>
+                  )}
+
+                  <button
+                    onClick={() => deleteSubtask(sub.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 3, display: 'flex', alignItems: 'center', opacity: 0.4, flexShrink: 0 }}
+                    title="Eliminar subtarea"
+                  >
+                    <Ic d={I.x} size={9} c={wfTokens.textMuted} />
+                  </button>
+                </div>
+              ))}
+
+              {addingSubtask ? subtaskInputArea(true) : (
+                <button
+                  onClick={() => setAddingSubtask(true)}
+                  style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', color: wfTokens.textDim, fontSize: 10, fontFamily: '"JetBrains Mono", monospace', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <Ic d={I.plus} size={9} /> añadir subtarea
+                </button>
+              )}
             </div>
           )}
 
-          {!task.subtasks && (
+          {/* Subtasks — no subtasks yet */}
+          {task.subtasks === null && (
             <div style={{ padding: '10px 20px', borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
-              <button onClick={() => change('subtasks', [0, 1])} style={{ background: 'none', border: 'none', cursor: 'pointer', color: wfTokens.textDim, fontSize: 10, fontFamily: '"JetBrains Mono", monospace', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Ic d={I.plus} size={9} /> añadir subtareas
-              </button>
+              {addingSubtask ? subtaskInputArea(false) : (
+                <button
+                  onClick={() => setAddingSubtask(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: wfTokens.textDim, fontSize: 10, fontFamily: '"JetBrains Mono", monospace', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <Ic d={I.plus} size={9} /> añadir subtareas
+                </button>
+              )}
             </div>
           )}
 
-          {/* Comments placeholder */}
-          {task.comments > 0 && (
+          {/* Comments list */}
+          {comments.length > 0 && (
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${wfTokens.borderSoft}` }}>
-              <Mono size={9} style={{ display: 'block', marginBottom: 10 }}>COMENTARIOS · {task.comments}</Mono>
-              {Array.from({ length: Math.min(2, task.comments) }).map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 999, background: wfTokens.surfaceHi, border: `1px solid ${wfTokens.border}`, flexShrink: 0 }} />
+              <Mono size={9} style={{ display: 'block', marginBottom: 10 }}>COMENTARIOS · {comments.length}</Mono>
+              {comments.map((c) => (
+                <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  <UserAvatar user={{ name: c.authorName, avatarColor: c.authorColor }} size={24} />
                   <SB style={{ flex: 1, padding: '8px 12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <Mono color={wfTokens.textMuted}>Usuario</Mono>
-                      <Mono>hace {i + 1}h</Mono>
+                      <Mono color={wfTokens.textMuted}>{c.authorName}</Mono>
+                      <Mono>{formatAgo(c.createdAt)}</Mono>
                     </div>
-                    <div style={{ fontSize: 11, color: wfTokens.textMuted, lineHeight: 1.5 }}>
-                      Comentario {i + 1} sobre esta tarea.
-                    </div>
+                    <div style={{ fontSize: 11, color: wfTokens.textMuted, lineHeight: 1.5 }}>{c.text}</div>
                   </SB>
                 </div>
               ))}
@@ -293,10 +406,34 @@ export default function TaskDetailPanel() {
           )}
 
           {/* Add comment */}
-          <div style={{ padding: '12px 20px', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ width: 24, height: 24, borderRadius: 999, background: wfTokens.surfaceHi, border: `1px solid ${wfTokens.border}`, flexShrink: 0 }} />
-            <div style={{ flex: 1, padding: '7px 12px', borderRadius: 5, border: `1px solid ${wfTokens.border}`, background: wfTokens.surfaceLo, fontSize: 11, color: wfTokens.textDim, cursor: 'text' }}>
-              Añadir comentario...
+          <div style={{ padding: '12px 20px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <UserAvatar
+              user={user ? { name: user.name, avatarColor: user.avatarColor } : { name: '?', avatarColor: wfTokens.surfaceHi }}
+              size={24}
+            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }}
+                placeholder="Añadir comentario... (Enter para enviar)"
+                rows={commentText ? 3 : 1}
+                style={{
+                  ...inputCss, resize: 'none', lineHeight: 1.5,
+                  padding: '7px 12px', borderRadius: 5,
+                  border: `1px solid ${commentText ? accent + '60' : wfTokens.border}`,
+                  background: wfTokens.surfaceLo, color: wfTokens.text, fontSize: 11,
+                  transition: 'border 0.1s', width: 'auto',
+                }}
+              />
+              {commentText.trim() && (
+                <button
+                  onClick={addComment}
+                  style={{ alignSelf: 'flex-end', padding: '5px 14px', borderRadius: 5, background: accent, color: '#0e0e14', border: 'none', cursor: 'pointer', fontSize: 10, fontFamily: '"JetBrains Mono", monospace' }}
+                >
+                  Enviar
+                </button>
+              )}
             </div>
           </div>
         </div>

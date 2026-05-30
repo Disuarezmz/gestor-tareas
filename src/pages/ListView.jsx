@@ -119,10 +119,10 @@ export default function ListView() {
                     <div style={{ fontSize: 11, color: task.status === 'done' ? wfTokens.textDim : wfTokens.text, textDecoration: task.status === 'done' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {task.title}
                     </div>
-                    {(task.subtasks || task.comments > 0) && (
+                    {(task.subtasks?.length > 0 || task.comments?.length > 0) && (
                       <div style={{ display: 'flex', gap: 8, fontSize: 9, color: wfTokens.textDim }}>
-                        {task.subtasks && <span><Ic d={I.check} size={8} /> {task.subtasks[0]}/{task.subtasks[1]}</span>}
-                        {task.comments > 0 && <span><Ic d={I.comment} size={8} /> {task.comments}</span>}
+                        {task.subtasks?.length > 0 && <span><Ic d={I.check} size={8} /> {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}</span>}
+                        {task.comments?.length > 0 && <span><Ic d={I.comment} size={8} /> {task.comments.length}</span>}
                       </div>
                     )}
                   </div>

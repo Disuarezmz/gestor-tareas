@@ -32,6 +32,39 @@ const migrations = [
   `INSERT INTO project_members (project_id, user_id, role)
    SELECT id, user_id, 'owner' FROM projects
    ON CONFLICT (project_id, user_id) DO NOTHING`,
+  `DO $$
+   DECLARE col_type text;
+   BEGIN
+     SELECT pg_catalog.format_type(atttypid, atttypmod) INTO col_type
+     FROM pg_catalog.pg_attribute
+     WHERE attrelid = 'tasks'::regclass AND attname = 'subtasks' AND attnum > 0;
+     IF col_type = 'integer[]' THEN
+       ALTER TABLE tasks ALTER COLUMN subtasks TYPE JSONB USING (
+         CASE
+           WHEN subtasks IS NULL OR cardinality(subtasks) < 2 OR subtasks[2] <= 0 THEN NULL
+           ELSE (
+             SELECT jsonb_agg(jsonb_build_object(
+               'id', i,
+               'title', 'Subtarea ' || i::text,
+               'done', i <= subtasks[1]
+             ))
+             FROM generate_series(1, subtasks[2]) AS i
+           )
+         END
+       );
+     END IF;
+   END $$`,
+  `DO $$
+   DECLARE col_type text;
+   BEGIN
+     SELECT pg_catalog.format_type(atttypid, atttypmod) INTO col_type
+     FROM pg_catalog.pg_attribute
+     WHERE attrelid = 'tasks'::regclass AND attname = 'comments' AND attnum > 0;
+     IF col_type = 'integer' THEN
+       ALTER TABLE tasks ALTER COLUMN comments TYPE JSONB USING '[]'::jsonb;
+       ALTER TABLE tasks ALTER COLUMN comments SET DEFAULT '[]'::jsonb;
+     END IF;
+   END $$`,
 ];
 
 export async function migrate() {
